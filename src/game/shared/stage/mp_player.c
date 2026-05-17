@@ -1423,13 +1423,7 @@ void SA2_LABEL(sub_801707C)(void)
 }
 
 // Knuckles
-// NOTE: Matches in SA2!
-// (99.36%) https://decomp.me/scratch/cjmw6
-#if (GAME == GAME_SA1)
-NONMATCH("asm/non_matching/game/shared/stage/sa1_mp_player__sa2__sub_8017670.inc", void SA2_LABEL(sub_8017670)(void))
-#else
 void SA2_LABEL(sub_8017670)(void)
-#endif
 {
     Sprite *playerSprite, *s;
     MultiplayerPlayer *mpp;
@@ -1448,10 +1442,9 @@ void SA2_LABEL(sub_8017670)(void)
     }
 
 #if (GAME == GAME_SA1)
-    // Checks twice for gGameMode 3, 5 !
-    if (((gGameMode == 3 || gGameMode == 5) && !IS_SAME_TEAM(mpp->unk56, SIO_MULTI_CNT->id)) || (gGameMode != 3 && gGameMode != 5))
+    if ((IS_TEAM_PLAY && !IS_SAME_TEAM(mpp->unk56, SIO_MULTI_CNT->id)) || !IS_TEAM_PLAY)
 #elif (GAME == GAME_SA2)
-    if (gGameMode != GAME_MODE_TEAM_PLAY || !IS_SAME_TEAM(mpp->unk56, SIO_MULTI_CNT->id))
+    if (!IS_TEAM_PLAY || !IS_SAME_TEAM(mpp->unk56, SIO_MULTI_CNT->id))
 #endif
     {
         if (!SA2_LABEL(sub_8018300)()) {
@@ -1508,7 +1501,14 @@ void SA2_LABEL(sub_8017670)(void)
                     if ((!GRAVITY_IS_INVERTED && I(gPlayer.qWorldY) > mpp->pos.y)
                         || (GRAVITY_IS_INVERTED && I(gPlayer.qWorldY) < mpp->pos.y)) {
                         gPlayer.moveState |= MOVESTATE_IA_OVERRIDE;
-                        PLAYERFN_CHANGE_SHIFT_OFFSETS(&gPlayer, 6, 14);
+#if (GAME == GAME_SA1) && !defined(NON_MATCHING)
+                        // https://decomp.me/scratch/cjmw6
+                        do {
+#endif
+                            PLAYERFN_CHANGE_SHIFT_OFFSETS(&gPlayer, 6, 14);
+#if (GAME == GAME_SA1) && !defined(NON_MATCHING)
+                        } while (0);
+#endif
                         gPlayer.qSpeedGround = 0;
                         gPlayer.qSpeedAirX = 0;
                         gPlayer.charState = CHARSTATE_IDLE;
@@ -1563,20 +1563,13 @@ void SA2_LABEL(sub_8017670)(void)
                 s32 x, y;
                 s32 playerUnk17 = gPlayer.spriteOffsetY;
                 bool32 gravityInverted = GRAVITY_IS_INVERTED;
-                // mpp->unk5C |= 4;
                 x = QS(mpp->pos.x);
 
                 // TODO: potential macro
                 if (!(gravityInverted)) {
-#if (GAME == GAME_SA1)
                     y = QS((mpp->pos.y + (s->hitboxes[0].b.top)) - rect[3]);
                     result = SA2_LABEL(sub_801F100)((mpp->pos.y + (s->hitboxes[0].b.top) - rect[3]) - playerUnk17, I(x), gPlayer.layer, -8,
                                                     SA2_LABEL(sub_801EC3C));
-#elif (GAME == GAME_SA2)
-                    y = QS((mpp->pos.y + (s->hitboxes[0].b.top)) - rect[3]);
-                    result = SA2_LABEL(sub_801F100)((mpp->pos.y + (s->hitboxes[0].b.top) - rect[3]) - playerUnk17, I(x), gPlayer.layer, -8,
-                                                    SA2_LABEL(sub_801EC3C));
-#endif
 
                     if (result < 0) {
                         y -= QS(result);
@@ -1585,15 +1578,9 @@ void SA2_LABEL(sub_8017670)(void)
                         mpp->unk5C &= ~4;
                     }
                 } else {
-#if (GAME == GAME_SA1)
                     y = QS(mpp->pos.y + (s->hitboxes[0].b.bottom) + rect[3]);
                     result = SA2_LABEL(sub_801F100)(((mpp->pos.y + (s->hitboxes[0].b.bottom) + rect[3]) + playerUnk17), I(x), gPlayer.layer,
                                                     8, SA2_LABEL(sub_801EC3C));
-#elif (GAME == GAME_SA2)
-                    y = QS(mpp->pos.y + (s->hitboxes[0].b.bottom) + rect[3]);
-                    result = SA2_LABEL(sub_801F100)(((mpp->pos.y + (s->hitboxes[0].b.bottom) + rect[3]) + playerUnk17), I(x), gPlayer.layer,
-                                                    8, SA2_LABEL(sub_801EC3C));
-#endif
 
                     if (result < 0) {
                         y += QS(result);
@@ -1654,9 +1641,6 @@ void SA2_LABEL(sub_8017670)(void)
         mpp->unk4C = val;
     }
 }
-#if (GAME == GAME_SA1)
-END_NONMATCH
-#endif
 
 void SA2_LABEL(sub_8017C28)(void)
 {
@@ -1670,9 +1654,9 @@ void SA2_LABEL(sub_8017C28)(void)
 
 #if (GAME == GAME_SA1)
     // Checks twice for gGameMode 3, 5 !
-    if (((gGameMode == 3 || gGameMode == 5) && !IS_SAME_TEAM(mpp->unk56, SIO_MULTI_CNT->id)) || (gGameMode != 3 && gGameMode != 5))
+    if ((IS_TEAM_PLAY && !IS_SAME_TEAM(mpp->unk56, SIO_MULTI_CNT->id)) || !IS_TEAM_PLAY)
 #elif (GAME == GAME_SA2)
-    if (gGameMode != GAME_MODE_TEAM_PLAY || !IS_SAME_TEAM(mpp->unk56, SIO_MULTI_CNT->id))
+    if (!IS_TEAM_PLAY || !IS_SAME_TEAM(mpp->unk56, SIO_MULTI_CNT->id))
 #endif
     {
         if (!SA2_LABEL(sub_8018300)()) {

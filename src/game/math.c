@@ -264,8 +264,12 @@ END_NONMATCH
 NONMATCH("asm/non_matching/game/math/unused_sub_80842E4.inc", void sub_80842E4()) { }
 END_NONMATCH
 
-NONMATCH("asm/non_matching/game/math/unused_sub_808442C.inc", void sub_808442C()) { }
-END_NONMATCH
+UNUSED static void sub_808442C(Vec3 *v, const struct UNK_8085F1C_1 *m)
+{
+    v->x = Q_6_10(((s64)v->x * m->unk2[0]) + ((s64)v->y * m->unk2[3]) + ((s64)v->z * m->unk2[6]) + m->unk14);
+    v->y = Q_6_10(((s64)v->x * m->unk2[1]) + ((s64)v->y * m->unk2[4]) + ((s64)v->z * m->unk2[7]) + m->unk18);
+    v->z = Q_6_10(((s64)v->x * m->unk2[2]) + ((s64)v->y * m->unk2[5]) + ((s64)v->z * m->unk2[8]) + m->unk1C);
+}
 
 NONMATCH("asm/non_matching/game/math/unused_sub_808458C.inc", void sub_808458C()) { }
 END_NONMATCH

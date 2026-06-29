@@ -238,7 +238,7 @@ void sub_8083B10(UNK_8085D14 *arg0) // Matches accesses but possibly a different
 }
 
 // This is used in this file, but it's not used by the game
-static void sub_8083B88(const struct UNK_8085F1C_1 *a, const struct UNK_8085F1C_1 *b, struct UNK_8085F1C_1 *c)
+void sub_8083B88(const struct UNK_8085F1C_1 *a, const struct UNK_8085F1C_1 *b, struct UNK_8085F1C_1 *c)
 {
     c->unk2[0] = Q_6_10((a->unk2[0] * b->unk2[0]) + (a->unk2[1] * b->unk2[3]) + (a->unk2[2] * b->unk2[6]));
     c->unk2[1] = Q_6_10((a->unk2[0] * b->unk2[1]) + (a->unk2[1] * b->unk2[4]) + (a->unk2[2] * b->unk2[7]));
@@ -261,10 +261,14 @@ END_NONMATCH
 NONMATCH("asm/non_matching/game/math/unused_sub_8084090.inc", void sub_8084090()) { }
 END_NONMATCH
 
-NONMATCH("asm/non_matching/game/math/unused_sub_80842E4.inc", void sub_80842E4()) { }
-END_NONMATCH
+UNUSED void sub_80842E4(const Vec3 *a, const struct UNK_8085F1C_1 *b, Vec3 *c)
+{
+    c->x = Q_6_10(((s64)a->x * b->unk2[0]) + ((s64)a->y * b->unk2[3]) + ((s64)a->z * b->unk2[6]) + b->unk14);
+    c->y = Q_6_10(((s64)a->x * b->unk2[1]) + ((s64)a->y * b->unk2[4]) + ((s64)a->z * b->unk2[7]) + b->unk18);
+    c->z = Q_6_10(((s64)a->x * b->unk2[2]) + ((s64)a->y * b->unk2[5]) + ((s64)a->z * b->unk2[8]) + b->unk1C);
+}
 
-UNUSED static void sub_808442C(Vec3 *v, const struct UNK_8085F1C_1 *m)
+UNUSED void sub_808442C(Vec3 *v, const struct UNK_8085F1C_1 *m)
 {
     v->x = Q_6_10(((s64)v->x * m->unk2[0]) + ((s64)v->y * m->unk2[3]) + ((s64)v->z * m->unk2[6]) + m->unk14);
     v->y = Q_6_10(((s64)v->x * m->unk2[1]) + ((s64)v->y * m->unk2[4]) + ((s64)v->z * m->unk2[7]) + m->unk18);

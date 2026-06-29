@@ -37,6 +37,13 @@ struct UNK_8085F1C {
     u8 unk70[4];
 };
 
+// Used by some of the unused routines in the module
+typedef struct {
+    s32 x;
+    s32 y;
+    s32 z;
+} Vec3;
+
 // Returns a 16-bit pseudorandom number
 u16 Random(void);
 

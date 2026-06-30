@@ -255,8 +255,38 @@ void sub_8083B88(const struct UNK_8085F1C_1 *a, const struct UNK_8085F1C_1 *b, s
     c->unk1C = Q_6_10(((s64)a->unk14 * b->unk2[2]) + ((s64)a->unk18 * b->unk2[5]) + ((s64)a->unk1C * b->unk2[8]) + b->unk1C);
 }
 
-NONMATCH("asm/non_matching/game/math/unused_sub_8083E44.inc", void sub_8083E44()) { }
-END_NONMATCH
+UNUSED void sub_8083E44(struct UNK_8085F1C_1 *a, const struct UNK_8085F1C_1 *b)
+{
+    s32 x, y, z;
+
+    x = a->unk2[0];
+    y = a->unk2[1];
+    z = a->unk2[2];
+    a->unk2[0] = Q_6_10((x * b->unk2[0]) + (y * b->unk2[3]) + (z * b->unk2[6]));
+    a->unk2[1] = Q_6_10((x * b->unk2[1]) + (y * b->unk2[4]) + (z * b->unk2[7]));
+    a->unk2[2] = Q_6_10((x * b->unk2[2]) + (y * b->unk2[5]) + (z * b->unk2[8]));
+
+    x = a->unk2[3];
+    y = a->unk2[4];
+    z = a->unk2[5];
+    a->unk2[3] = Q_6_10((x * b->unk2[0]) + (y * b->unk2[3]) + (z * b->unk2[6]));
+    a->unk2[4] = Q_6_10((x * b->unk2[1]) + (y * b->unk2[4]) + (z * b->unk2[7]));
+    a->unk2[5] = Q_6_10((x * b->unk2[2]) + (y * b->unk2[5]) + (z * b->unk2[8]));
+
+    x = a->unk2[6];
+    y = a->unk2[7];
+    z = a->unk2[8];
+    a->unk2[6] = Q_6_10((x * b->unk2[0]) + (y * b->unk2[3]) + (z * b->unk2[6]));
+    a->unk2[7] = Q_6_10((x * b->unk2[1]) + (y * b->unk2[4]) + (z * b->unk2[7]));
+    a->unk2[8] = Q_6_10((x * b->unk2[2]) + (y * b->unk2[5]) + (z * b->unk2[8]));
+
+    x = a->unk14;
+    y = a->unk18;
+    z = a->unk1C;
+    a->unk14 = Q_6_10(((s64)x * b->unk2[0]) + ((s64)y * b->unk2[3]) + ((s64)z * b->unk2[6]) + b->unk14);
+    a->unk18 = Q_6_10(((s64)x * b->unk2[1]) + ((s64)y * b->unk2[4]) + ((s64)z * b->unk2[7]) + b->unk18);
+    a->unk1C = Q_6_10(((s64)x * b->unk2[2]) + ((s64)y * b->unk2[5]) + ((s64)z * b->unk2[8]) + b->unk1C);
+}
 
 UNUSED void sub_8084090(const struct UNK_8085F1C_1 *a, struct UNK_8085F1C_1 *b)
 {

@@ -482,8 +482,20 @@ void sub_8084EAC(UNK_8085D14 *arg0)
 NONMATCH("asm/non_matching/game/math/unused_sub_8084EE0.inc", void sub_8084EE0()) { }
 END_NONMATCH
 
-NONMATCH("asm/non_matching/game/math/unused_sub_80851E0.inc", void sub_80851E0()) { }
-END_NONMATCH
+void sub_80851E0(struct UNK_8085F1C_1 *m)
+{
+    s32 x, y, UNUSED z;
+
+    sub_8084EAC(m);
+
+    x = NEGATE(m->unk14);
+    y = NEGATE(m->unk18);
+    z = NEGATE(m->unk1C);
+
+    m->unk14 = Q_6_10(((s64)x * m->unk2[0]) + ((s64)y * m->unk2[3]) + ((s64)m->unk1C * m->unk2[6]));
+    m->unk18 = Q_6_10(((s64)x * m->unk2[1]) + ((s64)y * m->unk2[4]) + ((s64)m->unk1C * m->unk2[7]));
+    m->unk1C = Q_6_10(((s64)x * m->unk2[2]) + ((s64)y * m->unk2[5]) + ((s64)m->unk1C * m->unk2[8]));
+}
 
 NONMATCH("asm/non_matching/game/math/unused_sub_8085314.inc", void sub_8085314(struct UNK_8085F1C_1 *p1, struct UNK_8085F1C_1 *p2))
 {

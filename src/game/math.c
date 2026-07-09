@@ -4,7 +4,7 @@
 #include "trig.h"
 
 // This module was only introduced in sa2+
-#if (GAME != GAME_SA1)
+#if (ENGINE >= ENGINE_2)
 // TODO: This is just UNK_8085F1C_1
 typedef struct {
     s16 unk0;

@@ -59,8 +59,20 @@ const u16 gUnknown_080E0290[] = { 0x0AAA, 0x02AA };
 #define Q_6_10_MUL(qValA, qValB) ((qValA * qValB) >> 10)
 #define Q_6_10(n)                ((int)((n) >> 10))
 
-NONMATCH("asm/non_matching/game/math/unused_sub_80832FC.inc", void sub_80832FC()) { }
-END_NONMATCH
+UNUSED s32 sub_80832FC(s32 r0, s32 r1, s32 r2, s32 r3, s32 stack_param1, u8 shift)
+{
+    s64 sp8 = stack_param1;
+    s32 sp1c = ((s32)((sp8 * sp8) >> shift) * sp8) >> shift;
+    s64 diff = (1 << shift) - stack_param1;
+    s32 sp28 = ((diff * diff) >> shift);
+    s64 accum = (s64)(s32)(((sp28 * diff) >> shift)) * r0;
+
+    accum += (((sp28 * sp8) >> shift) * r1) * 3;
+    accum += (((diff * (s32)((sp8 * sp8) >> shift)) >> shift) * r2) * 3;
+    accum += (s64)sp1c * r3;
+
+    return accum >> shift;
+}
 
 NONMATCH("asm/non_matching/game/math/unused_sub_808343C.inc", void sub_808343C()) { }
 END_NONMATCH
@@ -482,7 +494,7 @@ void sub_8084EAC(UNK_8085D14 *arg0)
 NONMATCH("asm/non_matching/game/math/unused_sub_8084EE0.inc", void sub_8084EE0()) { }
 END_NONMATCH
 
-void sub_80851E0(struct UNK_8085F1C_1 *m)
+UNUSED void sub_80851E0(struct UNK_8085F1C_1 *m)
 {
     s32 x, y, UNUSED z;
 

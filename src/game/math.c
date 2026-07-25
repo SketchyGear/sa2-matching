@@ -4,7 +4,7 @@
 #include "trig.h"
 
 // This module was only introduced in sa2+
-#if (ENGINE >= ENGINE_2)
+#if (GAME != GAME_SA1)
 // TODO: This is just UNK_8085F1C_1
 typedef struct {
     s16 unk0;
@@ -821,12 +821,32 @@ u16 sub_80859F4(s16 *unk28, u16 unk5C)
     return r0 / 4096;
 }
 
-#if 0
-// Found here in SA3
-// Almost identical to sub_80859F4, maybe just signed equivalent?
-s16 sub_80B1560(s16 *param0, u16 param1)
+#if (GAME == GAME_SA3)
+s16 sub_80B1560(s16 *unk28, u16 unk5C)
 {
+    s32 r7, r3, r5;
+    u32 r0;
 
+    s16 *r4 = &unk28[unk5C / 4096];
+    u16 r1 = unk5C % 4096;
+    r7 = (4095 - r1);
+
+    r7 = (r7 * (SQUARE(r7) >> 12)) >> 12; // (r7 * ((r7 * r7) / 4096)) / 4096
+    r0 = (r7 * r4[0] * 171) >> 10; // / 1024
+
+    r3 = SQUARE(r1) >> 12; // (r1 * r1) / 1024
+    r7 = (r3 * r1) >> 12; // (r3 * r1) / 1024
+
+    r0 += (r4[1] * (((((r3 * r1) >> 13) - r3) + gUnknown_080DBE54[0])));
+
+    r4 += 2;
+
+    r0 += (r4[0] * (((((r1 + r3)) - r7) >> 1) + gUnknown_080DBE54[1]));
+    r0 += ((r7 * r4[1] * 171) >> 10);
+
+    r0 *= 16;
+    r0 /= 16;
+    return r0 / 4096;
 }
 #endif
 

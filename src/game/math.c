@@ -74,8 +74,18 @@ UNUSED s32 sub_80832FC(s32 r0, s32 r1, s32 r2, s32 r3, s32 stack_param1, u8 shif
     return accum >> shift;
 }
 
-NONMATCH("asm/non_matching/game/math/unused_sub_808343C.inc", void sub_808343C()) { }
-END_NONMATCH
+UNUSED s32 sub_808343C(s32 p0, s32 m0, s32 m1, s32 p1, s32 frac, u8 shift)
+{
+    s32 t2 = ((s64)frac * frac) >> shift;
+    s32 t3 = ((s64)t2 * frac) >> shift;
+
+    s64 sum = (s64)p0 * (((t3 - t2) * 2 - t2) + (1 << shift));
+    sum += (s64)m0 * (((-t2 + t3) - t2) + frac);
+    sum += (s64)p1 * ((t2 * 3) - t3 - t3);
+    sum += (s64)m1 * (-t2 + t3);
+
+    return (s64)sum >> shift;
+}
 
 void sub_8083504(UNK_8085D14_2 *arg0, UNK_8085D14_2 *arg1, UNK_8085D14_2 *arg2)
 {

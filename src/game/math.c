@@ -57,7 +57,7 @@ const u16 gUnknown_080E0290[] = { 0x0AAA, 0x02AA };
 #define RAND_CONST 0x37119371;
 
 #define Q_6_10_MUL(qValA, qValB) ((qValA * qValB) >> 10)
-#define Q_6_10(n)                (n >> 10)
+#define Q_6_10(n)                ((n) >> 10)
 
 UNUSED s32 sub_80832FC(s32 r0, s32 r1, s32 r2, s32 r3, s32 stack_param1, u8 shift)
 {

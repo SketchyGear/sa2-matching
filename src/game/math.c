@@ -78,8 +78,8 @@ UNUSED s32 sub_808343C(s32 p0, s32 m0, s32 m1, s32 p1, s32 frac, u8 shift)
 {
     s32 t2 = ((s64)frac * frac) >> shift;
     s32 t3 = ((s64)t2 * frac) >> shift;
-
     s64 sum = (s64)p0 * (((t3 - t2) * 2 - t2) + (1 << shift));
+
     sum += (s64)m0 * (((-t2 + t3) - t2) + frac);
     sum += (s64)p1 * ((t2 * 3) - t3 - t3);
     sum += (s64)m1 * (-t2 + t3);
@@ -354,8 +354,14 @@ UNUSED void sub_808442C(Vec3 *v, const struct UNK_8085F1C_1 *m)
     v->z = Q_6_10(((s64)v->x * m->unk2[2]) + ((s64)v->y * m->unk2[5]) + ((s64)v->z * m->unk2[8]) + m->unk1C);
 }
 
-NONMATCH("asm/non_matching/game/math/unused_sub_808458C.inc", void sub_808458C()) { }
-END_NONMATCH
+void sub_808458C(const struct UNK_8085F1C_1 *m, const Vec3 *vA, Vec3 *vB)
+{
+    s32 scale = (1024 << 10) / Q_6_10(((s64)vA->x * m->unk14) + ((s64)vA->y * m->unk18) + ((s64)vA->z * m->unk1C) + (1024 << 10));
+
+    vB->x = Q_6_10_MUL(Q_6_10(((s64)vA->x * m->unk2[0]) + ((s64)vA->y * m->unk2[1]) + ((s64)vA->z * m->unk2[2])), scale);
+    vB->y = Q_6_10_MUL(Q_6_10(((s64)vA->x * m->unk2[3]) + ((s64)vA->y * m->unk2[4]) + ((s64)vA->z * m->unk2[5])), scale);
+    vB->z = Q_6_10_MUL(Q_6_10(((s64)vA->x * m->unk2[6]) + ((s64)vA->y * m->unk2[7]) + ((s64)vA->z * m->unk2[8])), scale);
+}
 
 UNUSED void sub_808477C(const struct UNK_8085F1C_1 *m, Vec3 *v)
 {

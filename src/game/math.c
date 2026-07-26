@@ -57,7 +57,7 @@ const u16 gUnknown_080E0290[] = { 0x0AAA, 0x02AA };
 #define RAND_CONST 0x37119371;
 
 #define Q_6_10_MUL(qValA, qValB) ((qValA * qValB) >> 10)
-#define Q_6_10(n)                ((int)((n) >> 10))
+#define Q_6_10(n)                (n >> 10)
 
 UNUSED s32 sub_80832FC(s32 r0, s32 r1, s32 r2, s32 r3, s32 stack_param1, u8 shift)
 {
@@ -357,8 +357,18 @@ UNUSED void sub_808442C(Vec3 *v, const struct UNK_8085F1C_1 *m)
 NONMATCH("asm/non_matching/game/math/unused_sub_808458C.inc", void sub_808458C()) { }
 END_NONMATCH
 
-NONMATCH("asm/non_matching/game/math/unused_sub_808477C.inc", void sub_808477C()) { }
-END_NONMATCH
+UNUSED void sub_808477C(const struct UNK_8085F1C_1 *m, Vec3 *v)
+{
+    s32 x = v->x;
+    s32 y = v->y;
+    UNUSED s32 z = v->z;
+
+    s32 scale = (1024 << 10) / Q_6_10((x * m->unk14) + (y * m->unk18) + (v->z * m->unk1C) + (1024 << 10));
+
+    v->x = Q_6_10_MUL(Q_6_10(((s64)x * m->unk2[0]) + ((s64)y * m->unk2[1]) + ((s64)v->z * m->unk2[2])), scale);
+    v->y = Q_6_10_MUL(Q_6_10(((s64)x * m->unk2[3]) + ((s64)y * m->unk2[4]) + ((s64)v->z * m->unk2[5])), scale);
+    v->z = Q_6_10_MUL(Q_6_10(((s64)x * m->unk2[6]) + ((s64)y * m->unk2[7]) + ((s64)v->z * m->unk2[8])), scale);
+}
 
 void sub_8084904(UNK_8085D14 *arg0, u16 arg1)
 {

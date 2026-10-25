@@ -2502,7 +2502,7 @@ bool8 sub_8050030(struct TA53_unk48 *unk48)
     }
 
     for (i = 0; i < 5; i++) {
-        *unk3A++ = sub_80859F4(&r4[i * 4], r7);
+        *unk3A++ = CubicBSpline(&r4[i * 4], r7);
     }
 
     unk48->unk2C = I((unk48->unk2C - sb) * 250) + sb;
@@ -2571,7 +2571,7 @@ bool8 sub_8050104(struct TA53_unk1C *unk1C)
     }
 
     for (i = 0; i < 2; i++) {
-        *unk3A++ = sub_8085968(&r4[i * 4], r7);
+        *unk3A++ = CubicBSplineSegment(&r4[i * 4], r7);
     }
 
     unk1C->unk14 = I((unk1C->unk14 - sb) * 250) + sb;

@@ -92,7 +92,7 @@ _08048D1E:
 	adds r0, r4, r0
 	lsrs r1, r6, #0x10
 	str r2, [sp, #4]
-	bl sub_80859F4
+	bl CubicBSpline
 	ldr r2, [sp, #4]
 	strh r0, [r2]
 	adds r2, #2

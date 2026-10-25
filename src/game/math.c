@@ -1,1236 +1,1139 @@
 #include <string.h>
+#if DEBUG
+#include <assert.h>
+#endif
+#include "trig.h"
 #include "game/math.h"
 
-#include "trig.h"
+static const u16 gCubicBSplineBasis[2] = {
+    Q_4_12(2.0 / 3.0),
+    Q_4_12(1.0 / 6.0)
+};
 
-// This module was only introduced in sa2+
-#if (GAME != GAME_SA1)
-// TODO: This is just UNK_8085F1C_1
-typedef struct {
-    s16 unk0;
-    s16 unk2;
-    s16 unk4;
-    s16 unk6;
-    u16 unk8;
-    u16 unkA;
-    u16 unkC;
-    u16 unkE;
-    u16 unk10;
-    u16 unk12;
-    u32 unk14;
-    u32 unk18;
-    u32 unk1C;
-} UNK_8085D14;
+static u32 gRngPrevValue = 0;
+static u32 gRngValue = 0;
 
-// Something different?
-typedef struct {
-    u16 unk0;
-    s16 unk2;
-    s16 unk4;
-    s16 unk6;
-    s32 unk8;
-    s32 unkC;
-    u16 unk10;
-    u16 unk12;
-    u32 unk14;
-    u32 unk18;
-    u32 unk1C;
-} UNK_8085D14_2;
+static inline bool8 TransformNode_RemoveChild(TransformNode *parent, TransformNode *child);
 
-typedef struct {
-    void *unk0;
-    void *start;
-    void *next;
-    void *unkC;
-} UNK_8085DEC;
-
-// Only used in here
-u32 gRngPrevValue = 0;
-u32 gRngValue = 0;
-
-struct UNK_8085F1C_1 *sub_8085EC4(struct UNK_8085F1C *p1);
-static bool8 sub_8085D98(UNK_8085DEC *thing, UNK_8085DEC *target);
-void sub_8084B54(struct UNK_8085F1C_1 *, u16, u16, u16);
-
-const u16 gUnknown_080E0290[] = { 0x0AAA, 0x02AA };
-
-#define RAND_CONST 0x37119371;
-
-#define Q_6_10_MUL(qValA, qValB) ((qValA * qValB) >> 10)
-#define Q_6_10(n)                ((n) >> 10)
-
-UNUSED s32 sub_80832FC(s32 r0, s32 r1, s32 r2, s32 r3, s32 stack_param1, u8 shift)
+inline u16 Random(void)
 {
-    s64 sp8 = stack_param1;
-    s32 sp1c = ((s32)((sp8 * sp8) >> shift) * sp8) >> shift;
-    s64 diff = (1 << shift) - stack_param1;
-    s32 sp28 = ((diff * diff) >> shift);
-    s64 accum = (s64)(s32)(((sp28 * diff) >> shift)) * r0;
-
-    accum += (((sp28 * sp8) >> shift) * r1) * 3;
-    accum += (((diff * (s32)((sp8 * sp8) >> shift)) >> shift) * r2) * 3;
-    accum += (s64)sp1c * r3;
-
-    return accum >> shift;
-}
-
-UNUSED s32 sub_808343C(s32 p0, s32 m0, s32 m1, s32 p1, s32 frac, u8 shift)
-{
-    s32 t2 = ((s64)frac * frac) >> shift;
-    s32 t3 = ((s64)t2 * frac) >> shift;
-    s64 sum = (s64)p0 * (((t3 - t2) * 2 - t2) + (1 << shift));
-
-    sum += (s64)m0 * (((-t2 + t3) - t2) + frac);
-    sum += (s64)p1 * ((t2 * 3) - t3 - t3);
-    sum += (s64)m1 * (-t2 + t3);
-
-    return (s64)sum >> shift;
-}
-
-void sub_8083504(UNK_8085D14_2 *arg0, UNK_8085D14_2 *arg1, UNK_8085D14_2 *arg2)
-{
-    s32 var_r3, var_r4;
-
-    if (arg1->unk2 != 0x400) {
-        var_r3 = (arg1->unk2 * arg0->unk8) >> 0xA;
-        arg2->unk2 = ((arg1->unk2 * arg0->unk2) >> 0xA);
-    } else {
-        var_r3 = arg0->unk8;
-    }
-    if (arg1->unk4 != 0x400) {
-        var_r4 = (arg1->unk4 * arg0->unkC) >> 0xA;
-        arg2->unk4 = ((arg1->unk4 * arg0->unk4) >> 0xA);
-    } else {
-        var_r4 = arg0->unkC;
-    }
-
-    if (arg1->unk0 != 0) {
-        arg2->unk8 = (arg1->unk8 + (((var_r3 * (COS(arg1->unk0) >> 6)) >> 8) - ((var_r4 * (SIN(arg1->unk0) >> 6)) >> 8)));
-        arg2->unkC = arg1->unkC + (((var_r3 * (SIN(arg1->unk0) >> 6)) >> 8) + ((var_r4 * (COS(arg1->unk0) >> 6)) >> 8));
-    } else {
-        arg2->unk8 = (arg1->unk8 + var_r3);
-        arg2->unkC = arg1->unkC + var_r4;
-    }
-    arg2->unk0 = ((arg0->unk0 + arg1->unk0) & (SIN_PERIOD - 1));
-}
-
-// This is used in this file, but it's not used by the game
-void sub_80835E0(UNK_8085D14_2 *arg0, UNK_8085D14_2 *arg1)
-{
-    s32 var_r3, var_r4;
-
-    if (arg1->unk2 != 0x400) {
-        var_r3 = (s32)(arg1->unk2 * arg0->unk8) >> 0xA;
-        arg0->unk2 = (s16)((s32)(arg1->unk2 * arg0->unk2) >> 0xA);
-    } else {
-        var_r3 = arg0->unk8;
-    }
-    if (arg1->unk4 != 0x400) {
-        var_r4 = (s32)(arg1->unk4 * arg0->unkC) >> 0xA;
-        arg0->unk4 = (s16)((s32)(arg1->unk4 * arg0->unk4) >> 0xA);
-    } else {
-        var_r4 = arg0->unkC;
-    }
-    if (arg1->unk0 != 0) {
-        arg0->unk8 = (arg1->unk8 + (((var_r3 * (COS(arg1->unk0) >> 6)) >> 8) - ((var_r4 * (SIN(arg1->unk0) >> 6)) >> 8)));
-        arg0->unkC = arg1->unkC + (((var_r3 * (SIN(arg1->unk0) >> 6)) >> 8) + ((var_r4 * (COS(arg1->unk0) >> 6)) >> 8));
-    } else {
-        arg0->unk8 = (s32)(arg1->unk8 + var_r3);
-        arg0->unkC = arg1->unkC + var_r4;
-    }
-    arg0->unk0 = ((arg0->unk0 + arg1->unk0) & (SIN_PERIOD - 1));
-}
-
-void sub_80836BC(UNK_8085D14_2 *arg0, UNK_8085D14_2 *arg1)
-{
-    s32 var_r3, var_r4;
-
-    if (arg1->unk2 != 0x400) {
-        var_r3 = (s32)(arg1->unk2 * arg0->unk8) >> 0xA;
-        arg1->unk2 = (s16)((s32)(arg1->unk2 * arg0->unk2) >> 0xA);
-    } else {
-        var_r3 = arg0->unk8;
-    }
-    if (arg1->unk4 != 0x400) {
-        var_r4 = (s32)(arg1->unk4 * arg0->unkC) >> 0xA;
-        arg1->unk4 = (s16)((s32)(arg1->unk4 * arg0->unk4) >> 0xA);
-    } else {
-        var_r4 = arg0->unkC;
-    }
-    if (arg1->unk0 != 0) {
-        arg1->unk8 = (arg1->unk8 + (((var_r3 * (COS(arg1->unk0) >> 6)) >> 8) - ((var_r4 * (SIN(arg1->unk0) >> 6)) >> 8)));
-        arg1->unkC = arg1->unkC + (((var_r3 * (SIN(arg1->unk0) >> 6)) >> 8) + ((var_r4 * (COS(arg1->unk0) >> 6)) >> 8));
-    } else {
-        arg1->unk8 = (s32)(arg1->unk8 + var_r3);
-        arg1->unkC = arg1->unkC + var_r4;
-    }
-    arg1->unk0 = ((arg0->unk0 + arg1->unk0) & (SIN_PERIOD - 1));
-}
-
-void sub_8083798(UNK_8085D14_2 *arg0)
-{
-    u16 temp_r0;
-
-    if (arg0->unk2 != 0x400) {
-        arg0->unk2 = Div(0x100000, arg0->unk2);
-        arg0->unk8 = (arg0->unk2 * arg0->unk8) >> 0xA;
-    }
-    if (arg0->unk4 != 0x400) {
-        arg0->unk4 = Div(0x100000, arg0->unk4);
-        arg0->unkC = (arg0->unk4 * arg0->unkC) >> 0xA;
-    }
-    temp_r0 = (0x400 - arg0->unk0) & 0x3FF;
-    arg0->unk0 = temp_r0;
-    if (temp_r0 != 0) {
-        s32 unk8, unkC;
-        unk8 = ((-arg0->unk8 * (COS(arg0->unk0) >> 6)) >> 8) - ((-arg0->unkC * (SIN(arg0->unk0) >> 6)) >> 8);
-        unkC = ((-arg0->unk8 * (SIN(arg0->unk0) >> 6)) >> 8) + ((-arg0->unkC * (COS(arg0->unk0) >> 6)) >> 8);
-
-        arg0->unkC = unkC;
-        arg0->unk8 = unk8;
-        return;
-    }
-    arg0->unk8 = (0 - arg0->unk8);
-    arg0->unkC = (0 - arg0->unkC);
-}
-
-void sub_8083858(UNK_8085D14 *arg0) // Matches accesses but possibly a different struct?
-{
-    s32 temp_r0;
-    s32 temp_r1_3;
-
-    temp_r0 = SQUARE(arg0->unk0) + SQUARE(arg0->unk2) + SQUARE(arg0->unk4) + SQUARE(arg0->unk6);
-    temp_r1_3 = 0x100000 / Sqrt(temp_r0);
-    arg0->unk0 = Q_6_10_MUL(arg0->unk0, temp_r1_3);
-    arg0->unk2 = Q_6_10_MUL(arg0->unk2, temp_r1_3);
-    arg0->unk4 = Q_6_10_MUL(arg0->unk4, temp_r1_3);
-    arg0->unk6 = Q_6_10_MUL(arg0->unk6, temp_r1_3);
-}
-
-void sub_80838CC(UNK_8085D14 *arg0, UNK_8085D14 *arg1, UNK_8085D14 *arg2)
-{
-    arg2->unk0 = (((arg0->unk6 * arg1->unk0) + (arg0->unk0 * arg1->unk6) + (arg0->unk2 * arg1->unk4)) - (arg0->unk4 * arg1->unk2)) >> 0xA;
-    arg2->unk2 = (((arg0->unk6 * arg1->unk2) - (arg0->unk0 * arg1->unk4)) + (arg0->unk2 * arg1->unk6) + (arg0->unk4 * arg1->unk0)) >> 0xA;
-    arg2->unk4 = ((((arg0->unk6 * arg1->unk4) + (arg0->unk0 * arg1->unk2)) - (arg0->unk2 * arg1->unk0)) + (arg0->unk4 * arg1->unk6)) >> 0xA;
-    arg2->unk6 = ((((arg0->unk6 * arg1->unk6) - (arg0->unk0 * arg1->unk0)) - (arg0->unk2 * arg1->unk2)) - (arg0->unk4 * arg1->unk4)) >> 0xA;
-}
-
-void sub_808399C(UNK_8085D14 *arg0, UNK_8085D14 *arg1)
-{
-    s16 r6 = arg0->unk0;
-    s16 r5 = arg0->unk2;
-    s16 r4 = arg0->unk4;
-    arg0->unk0 = (((arg0->unk6 * arg1->unk0) + (r6 * arg1->unk6) + (r5 * arg1->unk4)) - (r4 * arg1->unk2)) >> 10;
-    arg0->unk2 = (((arg0->unk6 * arg1->unk2) - (r6 * arg1->unk4)) + (r5 * arg1->unk6) + (r4 * arg1->unk0)) >> 10;
-    arg0->unk4 = ((((arg0->unk6 * arg1->unk4) + (r6 * arg1->unk2)) - (r5 * arg1->unk0)) + (r4 * arg1->unk6)) >> 10;
-    arg0->unk6 = ((((arg0->unk6 * arg1->unk6) - (r6 * arg1->unk0)) - (r5 * arg1->unk2)) - (r4 * arg1->unk4)) >> 10;
-}
-
-// Might be possible to reduce further
-void sub_8083A48(UNK_8085D14 *arg0, UNK_8085D14 *arg1)
-{
-    s16 temp_r8 = arg1->unk0;
-    s16 temp_r5;
-    s16 temp_r6;
-    s32 temp;
-
-    temp = arg0->unk6 * temp_r8 + arg0->unk0 * arg1->unk6;
-    temp_r6 = arg1->unk4;
-    temp += arg0->unk2 * temp_r6;
-    temp_r5 = arg1->unk2;
-    temp -= arg0->unk4 * temp_r5;
-
-    arg1->unk0 = Q_6_10(temp);
-    arg1->unk2 = Q_6_10(arg0->unk6 * temp_r5 - arg0->unk0 * temp_r6 + arg0->unk2 * arg1->unk6 + arg0->unk4 * temp_r8);
-    arg1->unk4 = Q_6_10(arg0->unk6 * temp_r6 + arg0->unk0 * temp_r5 - arg0->unk2 * temp_r8 + arg0->unk4 * arg1->unk6);
-    arg1->unk6 = Q_6_10(arg0->unk6 * arg1->unk6 - arg0->unk0 * temp_r8 - arg0->unk2 * temp_r5 - arg0->unk4 * temp_r6);
-}
-
-void sub_8083B10(UNK_8085D14 *arg0) // Matches accesses but possibly a different struct?
-{
-    s32 temp_r0;
-    s32 temp_r1_3;
-
-    temp_r0 = SQUARE(arg0->unk0) + SQUARE(arg0->unk2) + SQUARE(arg0->unk4) + SQUARE(arg0->unk6);
-    temp_r1_3 = 0x100000 / Sqrt(temp_r0);
-    arg0->unk0 = Q_6_10_MUL(-arg0->unk0, temp_r1_3);
-    arg0->unk2 = Q_6_10_MUL(-arg0->unk2, temp_r1_3);
-    arg0->unk4 = Q_6_10_MUL(-arg0->unk4, temp_r1_3);
-    arg0->unk6 = Q_6_10_MUL(arg0->unk6, temp_r1_3);
-}
-
-// This is used in this file, but it's not used by the game
-void sub_8083B88(const struct UNK_8085F1C_1 *a, const struct UNK_8085F1C_1 *b, struct UNK_8085F1C_1 *c)
-{
-    c->unk2[0] = Q_6_10((a->unk2[0] * b->unk2[0]) + (a->unk2[1] * b->unk2[3]) + (a->unk2[2] * b->unk2[6]));
-    c->unk2[1] = Q_6_10((a->unk2[0] * b->unk2[1]) + (a->unk2[1] * b->unk2[4]) + (a->unk2[2] * b->unk2[7]));
-    c->unk2[2] = Q_6_10((a->unk2[0] * b->unk2[2]) + (a->unk2[1] * b->unk2[5]) + (a->unk2[2] * b->unk2[8]));
-    c->unk2[3] = Q_6_10((a->unk2[3] * b->unk2[0]) + (a->unk2[4] * b->unk2[3]) + (a->unk2[5] * b->unk2[6]));
-    c->unk2[4] = Q_6_10((a->unk2[3] * b->unk2[1]) + (a->unk2[4] * b->unk2[4]) + (a->unk2[5] * b->unk2[7]));
-    c->unk2[5] = Q_6_10((a->unk2[3] * b->unk2[2]) + (a->unk2[4] * b->unk2[5]) + (a->unk2[5] * b->unk2[8]));
-    c->unk2[6] = Q_6_10((a->unk2[6] * b->unk2[0]) + (a->unk2[7] * b->unk2[3]) + (a->unk2[8] * b->unk2[6]));
-    c->unk2[7] = Q_6_10((a->unk2[6] * b->unk2[1]) + (a->unk2[7] * b->unk2[4]) + (a->unk2[8] * b->unk2[7]));
-    c->unk2[8] = Q_6_10((a->unk2[6] * b->unk2[2]) + (a->unk2[7] * b->unk2[5]) + (a->unk2[8] * b->unk2[8]));
-
-    c->unk14 = Q_6_10(((s64)a->unk14 * b->unk2[0]) + ((s64)a->unk18 * b->unk2[3]) + ((s64)a->unk1C * b->unk2[6]) + b->unk14);
-    c->unk18 = Q_6_10(((s64)a->unk14 * b->unk2[1]) + ((s64)a->unk18 * b->unk2[4]) + ((s64)a->unk1C * b->unk2[7]) + b->unk18);
-    c->unk1C = Q_6_10(((s64)a->unk14 * b->unk2[2]) + ((s64)a->unk18 * b->unk2[5]) + ((s64)a->unk1C * b->unk2[8]) + b->unk1C);
-}
-
-UNUSED void sub_8083E44(struct UNK_8085F1C_1 *a, const struct UNK_8085F1C_1 *b)
-{
-    s32 x, y, z;
-
-    x = a->unk2[0];
-    y = a->unk2[1];
-    z = a->unk2[2];
-    a->unk2[0] = Q_6_10((x * b->unk2[0]) + (y * b->unk2[3]) + (z * b->unk2[6]));
-    a->unk2[1] = Q_6_10((x * b->unk2[1]) + (y * b->unk2[4]) + (z * b->unk2[7]));
-    a->unk2[2] = Q_6_10((x * b->unk2[2]) + (y * b->unk2[5]) + (z * b->unk2[8]));
-
-    x = a->unk2[3];
-    y = a->unk2[4];
-    z = a->unk2[5];
-    a->unk2[3] = Q_6_10((x * b->unk2[0]) + (y * b->unk2[3]) + (z * b->unk2[6]));
-    a->unk2[4] = Q_6_10((x * b->unk2[1]) + (y * b->unk2[4]) + (z * b->unk2[7]));
-    a->unk2[5] = Q_6_10((x * b->unk2[2]) + (y * b->unk2[5]) + (z * b->unk2[8]));
-
-    x = a->unk2[6];
-    y = a->unk2[7];
-    z = a->unk2[8];
-    a->unk2[6] = Q_6_10((x * b->unk2[0]) + (y * b->unk2[3]) + (z * b->unk2[6]));
-    a->unk2[7] = Q_6_10((x * b->unk2[1]) + (y * b->unk2[4]) + (z * b->unk2[7]));
-    a->unk2[8] = Q_6_10((x * b->unk2[2]) + (y * b->unk2[5]) + (z * b->unk2[8]));
-
-    x = a->unk14;
-    y = a->unk18;
-    z = a->unk1C;
-    a->unk14 = Q_6_10(((s64)x * b->unk2[0]) + ((s64)y * b->unk2[3]) + ((s64)z * b->unk2[6]) + b->unk14);
-    a->unk18 = Q_6_10(((s64)x * b->unk2[1]) + ((s64)y * b->unk2[4]) + ((s64)z * b->unk2[7]) + b->unk18);
-    a->unk1C = Q_6_10(((s64)x * b->unk2[2]) + ((s64)y * b->unk2[5]) + ((s64)z * b->unk2[8]) + b->unk1C);
-}
-
-UNUSED void sub_8084090(const struct UNK_8085F1C_1 *a, struct UNK_8085F1C_1 *b)
-{
-    s32 x, y, z;
-
-    b->unk14 = Q_6_10(((s64)a->unk14 * b->unk2[0]) + ((s64)a->unk18 * b->unk2[3]) + ((s64)a->unk1C * b->unk2[6]) + b->unk14);
-    b->unk18 = Q_6_10(((s64)a->unk14 * b->unk2[1]) + ((s64)a->unk18 * b->unk2[4]) + ((s64)a->unk1C * b->unk2[7]) + b->unk18);
-    b->unk1C = Q_6_10(((s64)a->unk14 * b->unk2[2]) + ((s64)a->unk18 * b->unk2[5]) + ((s64)a->unk1C * b->unk2[8]) + b->unk1C);
-
-    x = b->unk2[0];
-    y = b->unk2[3];
-    z = b->unk2[6];
-    b->unk2[0] = Q_6_10((a->unk2[0] * x) + (a->unk2[1] * y) + (a->unk2[2] * z));
-    b->unk2[3] = Q_6_10((a->unk2[3] * x) + (a->unk2[4] * y) + (a->unk2[5] * z));
-    b->unk2[6] = Q_6_10((a->unk2[6] * x) + (a->unk2[7] * y) + (a->unk2[8] * z));
-
-    x = b->unk2[1];
-    y = b->unk2[4];
-    z = b->unk2[7];
-    b->unk2[1] = Q_6_10((a->unk2[0] * x) + (a->unk2[1] * y) + (a->unk2[2] * z));
-    b->unk2[4] = Q_6_10((a->unk2[3] * x) + (a->unk2[4] * y) + (a->unk2[5] * z));
-    b->unk2[7] = Q_6_10((a->unk2[6] * x) + (a->unk2[7] * y) + (a->unk2[8] * z));
-
-    x = b->unk2[2];
-    y = b->unk2[5];
-    z = b->unk2[8];
-    b->unk2[2] = Q_6_10((a->unk2[0] * x) + (a->unk2[1] * y) + (a->unk2[2] * z));
-    b->unk2[5] = Q_6_10((a->unk2[3] * x) + (a->unk2[4] * y) + (a->unk2[5] * z));
-    b->unk2[8] = Q_6_10((a->unk2[6] * x) + (a->unk2[7] * y) + (a->unk2[8] * z));
-}
-
-UNUSED void sub_80842E4(const Vec3 *a, const struct UNK_8085F1C_1 *b, Vec3 *c)
-{
-    c->x = Q_6_10(((s64)a->x * b->unk2[0]) + ((s64)a->y * b->unk2[3]) + ((s64)a->z * b->unk2[6]) + b->unk14);
-    c->y = Q_6_10(((s64)a->x * b->unk2[1]) + ((s64)a->y * b->unk2[4]) + ((s64)a->z * b->unk2[7]) + b->unk18);
-    c->z = Q_6_10(((s64)a->x * b->unk2[2]) + ((s64)a->y * b->unk2[5]) + ((s64)a->z * b->unk2[8]) + b->unk1C);
-}
-
-UNUSED void sub_808442C(Vec3 *v, const struct UNK_8085F1C_1 *m)
-{
-    v->x = Q_6_10(((s64)v->x * m->unk2[0]) + ((s64)v->y * m->unk2[3]) + ((s64)v->z * m->unk2[6]) + m->unk14);
-    v->y = Q_6_10(((s64)v->x * m->unk2[1]) + ((s64)v->y * m->unk2[4]) + ((s64)v->z * m->unk2[7]) + m->unk18);
-    v->z = Q_6_10(((s64)v->x * m->unk2[2]) + ((s64)v->y * m->unk2[5]) + ((s64)v->z * m->unk2[8]) + m->unk1C);
-}
-
-void sub_808458C(const struct UNK_8085F1C_1 *m, const Vec3 *vA, Vec3 *vB)
-{
-    s32 scale = (1024 << 10) / Q_6_10(((s64)vA->x * m->unk14) + ((s64)vA->y * m->unk18) + ((s64)vA->z * m->unk1C) + (1024 << 10));
-
-    vB->x = Q_6_10_MUL(Q_6_10(((s64)vA->x * m->unk2[0]) + ((s64)vA->y * m->unk2[1]) + ((s64)vA->z * m->unk2[2])), scale);
-    vB->y = Q_6_10_MUL(Q_6_10(((s64)vA->x * m->unk2[3]) + ((s64)vA->y * m->unk2[4]) + ((s64)vA->z * m->unk2[5])), scale);
-    vB->z = Q_6_10_MUL(Q_6_10(((s64)vA->x * m->unk2[6]) + ((s64)vA->y * m->unk2[7]) + ((s64)vA->z * m->unk2[8])), scale);
-}
-
-UNUSED void sub_808477C(const struct UNK_8085F1C_1 *m, Vec3 *v)
-{
-    s32 x = v->x;
-    s32 y = v->y;
-    UNUSED s32 z = v->z;
-
-    s32 scale = (1024 << 10) / Q_6_10((x * m->unk14) + (y * m->unk18) + (v->z * m->unk1C) + (1024 << 10));
-
-    v->x = Q_6_10_MUL(Q_6_10(((s64)x * m->unk2[0]) + ((s64)y * m->unk2[1]) + ((s64)v->z * m->unk2[2])), scale);
-    v->y = Q_6_10_MUL(Q_6_10(((s64)x * m->unk2[3]) + ((s64)y * m->unk2[4]) + ((s64)v->z * m->unk2[5])), scale);
-    v->z = Q_6_10_MUL(Q_6_10(((s64)x * m->unk2[6]) + ((s64)y * m->unk2[7]) + ((s64)v->z * m->unk2[8])), scale);
-}
-
-void sub_8084904(UNK_8085D14 *arg0, u16 arg1)
-{
-    u32 *r1;
-    s16 temp_r0;
-    s16 temp_r1;
-    u8 i;
-
-    r1 = (u32 *)arg0;
-    for (i = 0; i < sizeof(UNK_8085D14); i += 4) {
-        *r1++ = 0;
-    };
-    ((UNK_8085D14 *)r1)->unk12 = 0x400;
-    ((UNK_8085D14 *)r1)->unkA = 0x400;
-    ((UNK_8085D14 *)r1)->unk2 = 0x400;
-    temp_r1 = SIN(arg1) >> 4;
-    temp_r0 = COS(arg1) >> 4;
-    arg0->unkA = temp_r0;
-    arg0->unkC = temp_r1;
-    arg0->unk10 = -temp_r1;
-    arg0->unk12 = temp_r0;
-}
-
-void sub_8084964(UNK_8085D14 *arg0, u16 arg1)
-{
-    u32 *r1;
-    s16 temp_r0;
-    s16 temp_r1;
-    u8 i;
-
-    r1 = (u32 *)arg0;
-    for (i = 0; i < sizeof(UNK_8085D14); i += 4) {
-        *r1++ = 0;
-    };
-    ((UNK_8085D14 *)r1)->unk12 = 0x400;
-    ((UNK_8085D14 *)r1)->unkA = 0x400;
-    ((UNK_8085D14 *)r1)->unk2 = 0x400;
-    temp_r1 = SIN(arg1) >> 4;
-    temp_r0 = COS(arg1) >> 4;
-    arg0->unk2 = temp_r0;
-    arg0->unk6 = -temp_r1;
-    arg0->unkE = temp_r1;
-    arg0->unk12 = temp_r0;
-}
-
-void sub_80849C4(UNK_8085D14 *arg0, u16 arg1)
-{
-    u32 *r1;
-    s16 temp_r0;
-    s16 temp_r1;
-    u8 i;
-
-    r1 = (u32 *)arg0;
-    for (i = 0; i < sizeof(UNK_8085D14); i += 4) {
-        *r1++ = 0;
-    };
-    ((UNK_8085D14 *)r1)->unk12 = 0x400;
-    ((UNK_8085D14 *)r1)->unkA = 0x400;
-    ((UNK_8085D14 *)r1)->unk2 = 0x400;
-    temp_r1 = SIN(arg1) >> 4;
-    temp_r0 = COS(arg1) >> 4;
-    arg0->unk2 = temp_r0;
-    arg0->unk4 = temp_r1;
-    arg0->unk8 = -temp_r1;
-    arg0->unkA = temp_r0;
-}
-
-void sub_8084A24(UNK_8085D14 *arg0, u16 arg1, UNK_8085D14 *arg2)
-{
-    s16 temp_r1;
-    s16 temp_r2;
-    s16 temp_r4;
-    s16 temp_r5;
-    s32 temp_r6;
-    s32 *r1;
-    u8 i;
-
-    r1 = (s32 *)arg0;
-    for (i = 0; i < sizeof(UNK_8085D14); i += 4) {
-        *r1++ = 0;
-    };
-
-    ((UNK_8085D14 *)r1)->unk12 = 0x400;
-    ((UNK_8085D14 *)r1)->unkA = 0x400;
-    ((UNK_8085D14 *)r1)->unk2 = 0x400;
-
-    temp_r5 = SIN(arg1) >> 4;
-    temp_r6 = COS(arg1) >> 4;
-
-    temp_r1 = (((Q_6_10_MUL(arg2->unk0, arg2->unk2)) * (0x400 - temp_r6)) << 6) >> 0x10;
-    temp_r4 = (((Q_6_10_MUL(arg2->unk2, arg2->unk4)) * (0x400 - temp_r6)) << 6) >> 0x10;
-    temp_r2 = (((Q_6_10_MUL(arg2->unk0, arg2->unk4)) * (0x400 - temp_r6)) << 6) >> 0x10;
-
-    arg0->unk2 = temp_r6 + (Q_6_10_MUL((Q_6_10_MUL(arg2->unk0, arg2->unk0)), (0x400 - temp_r6)));
-    arg0->unk4 = temp_r1 + (Q_6_10_MUL(arg2->unk4, temp_r5));
-    arg0->unk6 = temp_r2 - (Q_6_10_MUL(arg2->unk2, temp_r5));
-    arg0->unk8 = temp_r1 - (Q_6_10_MUL(arg2->unk4, temp_r5));
-
-    arg0->unkA = temp_r6 + (Q_6_10_MUL((Q_6_10_MUL(arg2->unk2, arg2->unk2)), (0x400 - temp_r6)));
-    arg0->unkC = temp_r4 + (Q_6_10_MUL(arg2->unk0, temp_r5));
-    arg0->unkE = temp_r2 + (Q_6_10_MUL(arg2->unk2, temp_r5));
-    arg0->unk10 = temp_r4 - (Q_6_10_MUL(arg2->unk0, temp_r5));
-
-    arg0->unk12 = temp_r6 + (Q_6_10_MUL((Q_6_10_MUL(arg2->unk4, arg2->unk4)), (0x400 - temp_r6)));
-}
-
-// This is used in this file, but it's not used by the game
-void sub_8084B54(struct UNK_8085F1C_1 *matrix, u16 anglez, u16 angley, u16 anglex)
-{
-    s16 sy = SIN(angley) >> 4;
-    s16 cy = COS(angley) >> 4;
-    s16 sz = SIN(anglez) >> 4;
-    s16 cz = COS(anglez) >> 4;
-    s16 sx = SIN(anglex) >> 4;
-    s16 cx = COS(anglex) >> 4;
-
-    matrix->unk2[0] = Q_6_10_MUL(cx, cz) + Q_6_10_MUL(Q_6_10_MUL(sx, sy), sz);
-    matrix->unk2[1] = Q_6_10_MUL(sx, cy);
-    matrix->unk2[2] = Q_6_10_MUL(-cx, sz) + Q_6_10_MUL(Q_6_10_MUL(sx, sy), cz);
-    matrix->unk2[3] = Q_6_10_MUL(-sx, cz) + Q_6_10_MUL(sz, Q_6_10_MUL(sy, cx));
-    matrix->unk2[4] = Q_6_10_MUL(cx, cy);
-    matrix->unk2[5] = Q_6_10_MUL(sz, sx) + Q_6_10_MUL(cz, Q_6_10_MUL(sy, cx));
-    matrix->unk2[6] = Q_6_10_MUL(cy, sz);
-    matrix->unk2[7] = -sy;
-    matrix->unk2[8] = Q_6_10_MUL(cy, cz);
-
-    matrix->unk1C = 0;
-    matrix->unk18 = 0;
-    matrix->unk14 = 0;
-}
-
-// https://decomp.me/scratch/ROe1T
-NONMATCH("asm/non_matching/game/math/unused_sub_8084C70.inc", void sub_8084C70()) { }
-END_NONMATCH
-
-void sub_8084EAC(UNK_8085D14 *arg0)
-{
-    XOR_SWAP_2(arg0->unk4, arg0->unk8);
-    XOR_SWAP_2(arg0->unk6, arg0->unkE);
-    XOR_SWAP_2(arg0->unkC, arg0->unk10);
-}
-
-NONMATCH("asm/non_matching/game/math/unused_sub_8084EE0.inc", void sub_8084EE0()) { }
-END_NONMATCH
-
-UNUSED void sub_80851E0(struct UNK_8085F1C_1 *m)
-{
-    s32 x, y, UNUSED z;
-
-    sub_8084EAC(m);
-
-    x = NEGATE(m->unk14);
-    y = NEGATE(m->unk18);
-    z = NEGATE(m->unk1C);
-
-    m->unk14 = Q_6_10(((s64)x * m->unk2[0]) + ((s64)y * m->unk2[3]) + ((s64)m->unk1C * m->unk2[6]));
-    m->unk18 = Q_6_10(((s64)x * m->unk2[1]) + ((s64)y * m->unk2[4]) + ((s64)m->unk1C * m->unk2[7]));
-    m->unk1C = Q_6_10(((s64)x * m->unk2[2]) + ((s64)y * m->unk2[5]) + ((s64)m->unk1C * m->unk2[8]));
-}
-
-NONMATCH("asm/non_matching/game/math/unused_sub_8085314.inc", void sub_8085314(struct UNK_8085F1C_1 *p1, struct UNK_8085F1C_1 *p2))
-{
-    // Incomplete
-    s32 unk0 = p2->unk0 * 2;
-    s32 unk2 = p2->unk2[0] * 2;
-    s32 unk4 = p2->unk2[1] * 2;
-    s32 temp0 = (p2->unk2[0] * unk2 * 0x40) >> 0x10;
-    s32 temp1 = (p2->unk2[1] * unk4 * 0x40) >> 0x10;
-
-    s16 temp2, temp3, temp4, temp5, temp6;
-
-    p1->unk14 = 0;
-    p1->unk2[0] = 0x400 - (temp0 + temp1);
-
-    temp2 = (p2->unk2[2] * unk4 * 0x40) >> 0x10;
-    temp3 = (p2->unk0 * unk2 * 0x40) >> 0x10;
-
-    p1->unk2[1] = temp3 - temp2;
-
-    temp4 = (p2->unk0 * unk4 * 0x40) >> 0x10;
-    temp5 = (p2->unk2[2] * unk2 * 0x40) >> 0x10;
-
-    p1->unk2[2] = temp4 + temp5;
-    p1->unk2[3] = temp3 + temp2;
-
-    temp3 = (p2->unk0 * unk0 * 0x40) >> 0x10;
-    p1->unk2[4] = 0x400 - (temp1 + temp3);
-
-    temp1 = (p2->unk2[2] * unk0 * 0x40) >> 0x10;
-    temp6 = (p2->unk2[0] * unk4 * 0x40) >> 0x10;
-
-    p1->unk2[5] = temp6 - temp1;
-    p1->unk2[6] = temp4 - temp5;
-    p1->unk2[7] = temp6 + temp1;
-    p1->unk2[8] = 0x400 - (temp3 + temp0);
-    p1->unk1C = p1->unk14;
-    p1->unk18 = p1->unk14;
-}
-END_NONMATCH
-
-struct UNK_8085F1C_1 *sub_80853F8(struct UNK_8085F1C *p1)
-{
-    if (!(p1->unkC & 1)) {
-        if (p1->unk10 == 1) {
-            sub_8084B54(&p1->unk34, p1->unk54, p1->unk56, p1->unk58);
-            p1->unk34.unk2[0] = (p1->unk5C * p1->unk34.unk2[0]) >> 10;
-            p1->unk34.unk2[1] = (p1->unk5C * p1->unk34.unk2[1]) >> 10;
-            p1->unk34.unk2[2] = (p1->unk5C * p1->unk34.unk2[2]) >> 10;
-
-            p1->unk34.unk2[3] = (p1->unk5E * p1->unk34.unk2[3]) >> 10;
-            p1->unk34.unk2[4] = (p1->unk5E * p1->unk34.unk2[4]) >> 10;
-            p1->unk34.unk2[5] = (p1->unk5E * p1->unk34.unk2[5]) >> 10;
-
-            p1->unk34.unk2[6] = (p1->unk60 * p1->unk34.unk2[6]) >> 10;
-            p1->unk34.unk2[7] = (p1->unk60 * p1->unk34.unk2[7]) >> 10;
-            p1->unk34.unk2[8] = (p1->unk60 * p1->unk34.unk2[8]) >> 10;
-
-            p1->unk34.unk14 = p1->unk64;
-            p1->unk34.unk18 = p1->unk68;
-            p1->unk34.unk1C = p1->unk6C;
-        }
-        p1->unkC |= 1;
-    }
-
-    return &p1->unk34;
-}
-
-u16 Random(void)
-{
-    u32 new;
-    // These need to be loaded
-    // and referenced as pointers to
-    // match asm
     u32 *pPrev = &gRngPrevValue;
-    u32 *pCurrent = &gRngValue;
+#if !PORTABLE
+    u16 *pCurrent = ((u16 *)&gRngValue);
+#endif
 
     u32 prev = *pPrev;
-    gRngPrevValue = *pCurrent;
+    *pPrev = gRngValue;
 
-    // This calculation has to be done
-    // in 2 stages to match asm
-    new = prev + RAND_CONST;
-    new += *pCurrent;
+    gRngValue = prev + RAND_CONST;
+    gRngValue += *pPrev;
 
-    // Could use the pointer here
-    // but it's more clear when we assign
-    gRngValue = new;
-
-    // Take the top 16 bits
-    return ((u16 *)&gRngValue)[1];
+#if PORTABLE
+    // For the sake of big-endian platforms...
+    return gRngValue >> 16;
+#else
+    return pCurrent[1];
+#endif
 }
 
-void SeedRng(u32 a, u32 b)
+inline void SeedRng(u32 prev, u32 cur)
 {
-    gRngPrevValue = a;
-    gRngValue = b;
+    gRngPrevValue = prev;
+    gRngValue = cur;
 }
 
-u32 AbsMax(s32 a, s32 b)
+UNUSED inline u32 MaxAbs(s32 a, s32 b)
 {
-    if (a < 0) {
-        a = -a;
-    }
+    a = ABS(a);
+    b = ABS(b);
 
-    if (b < 0) {
-        b = -b;
-    }
-
-    if (b < a) {
-        return a;
-    }
-    return b;
+    return MAX(a, b);
 }
 
-// AbsSumMul
-// NOTE(Jace): Seems to approximate the length of a vector
-// If so, 'NormalizeVector' might be a reasonable name?
-u32 sub_8085530(s32 a, s32 b)
+inline u32 ApproxVecLen(s32 a, s32 b)
 {
-    if (a < 0) {
-        a = -a;
-    }
+    a = ABS(a);
+    b = ABS(b);
 
-    if (b < 0) {
-        b = -b;
-    }
-
-    if (a > b) {
-        return (((u64)a * Q(0.9609375)) + ((u64)b * Q(0.3984375))) >> 8;
-    } else {
-        return (((u64)b * Q(0.9609375)) + ((u64)a * Q(0.3984375))) >> 8;
-    }
+    return (a <= b) ?
+            I((u64)b * Q(123.0 / 128.0) + (u64)a * Q(51.0 / 128.0)) :
+            I((u64)a * Q(123.0 / 128.0) + (u64)b * Q(51.0 / 128.0));
 }
 
-s16 sub_808558C(u16 angleA, u16 angleB, u8 numDecimalBits)
+inline s16 AngleDiff(u16 angleA, u16 angleB, u8 n)
 {
-    u32 c1 = (1 << numDecimalBits);
-    u16 c2 = c1 - 1;
+    u32 range = BitValue(n);
+    u16 mask = range - 1;
 
-    angleB -= angleA;
-    angleB &= c2;
+    angleB = (angleB - angleA) & mask;
 
-    if (angleB <= (c1 / 2)) {
-        return angleB;
-    } else {
-        return (angleB - c1);
-    }
+    return (angleB <= range / 2) ? angleB : angleB - range;
 }
 
-u32 sub_80855C0(s32 a, s32 b, s32 c, u8 d)
+inline u32 Lerp(s32 start, s32 end, s32 t, u8 n)
 {
-    s64 e = (s64)c * (a - b);
-
-    return a - (e >> d);
+    return start - ((s64)t * (end - start) >> n);
 }
 
-UNUSED u16 sub_80855F8(u16 r7, u16 r2, u8 r6, s16 r5, u8 r4)
+UNUSED inline u16 LerpAngle(u16 angleStart, u16 angleEnd, u8 n1, s16 t, u8 n2)
 {
-    u16 r2_2 = r2;
-    u32 r3 = (1 << r6);
-    s32 r1 = r3 - 1;
-    u32 r0 = r2_2 - r7;
-    u16 val;
-    s32 r1_2;
-    r2_2 = (r0 & r1);
-    if (r2_2 > r3 >> 1) {
-        r1_2 = (s16)(r2_2 - r3);
-    } else {
-        r1_2 = (s16)r2_2;
-    }
-    val = -((r5 * -r1_2) >> r4);
-    return (r7 + val) & ((1 << r6) - 1);
+    s16 diff = -(t * -AngleDiff(angleStart, angleEnd, n1) >> n2);
+
+    return (angleStart + diff) & (BitValue(n1) - 1);
 }
 
-s32 sub_8085654(s32 a, s32 b, s32 c, u8 d, u8 e)
+inline s32 LerpToEnd(s32 start, s32 end, s32 t, u8 n, u8 cnt)
 {
     do {
-        a -= (((s64)c * (s64)(a - b))) >> d;
-        e -= 1;
-    } while (e != 0xFF);
+        start = Lerp(start, end, t, n);
+    } while (--cnt != 255);
 
-    return a;
+    return start;
 }
 
-s32 sub_8085698(s32 a, s32 b, s32 c, u8 d, u8 e)
+inline s32 LerpToStart(s32 start, s32 end, s32 t, u8 n, u8 cnt)
 {
     do {
-        b = a - ((((s64)c * (s64)(a - b))) >> d);
-        e -= 1;
-    } while (e != 0xFF);
+        end = Lerp(start, end, t, n);
+    } while (--cnt != 255);
 
-    return b;
+    return end;
 }
 
-UNUSED s32 sub_80856DC(s32 a, s32 b, s32 c) { return (a * 7 + b * 6 - c) / 12; }
-
-UNUSED s32 sub_80856F8(s32 a, s32 b, s32 c) { return ((b * 6 - a) + c * 7) / 12; }
-
-UNUSED s32 sub_8085714(s32 a, s32 b, s32 c) { return ((a + b * 8) - c) >> 3; }
-
-UNUSED s32 sub_8085720(s32 a, s32 b, s32 c) { return ((b * 8 - a) + c) >> 3; }
-
-UNUSED s32 sub_808572C(s32 a, s32 b, s32 c, s32 d, u32 e, u8 f) { return ((s64)(b - a) * (s64)((1 << f) - c)) >> f; }
-
-UNUSED s32 sub_8085758(s32 a, s32 b) { return b - a; }
-
-UNUSED s32 sub_808575C(s32 a, s32 b, s32 c, s32 d, s32 e, s32 f, u8 g)
+UNUSED inline s32 WeightedLeft(s32 prev, s32 cur, s32 next)
 {
-    a = c - a;
-    a += a >> 1;
-    a -= (b >> 1);
-    return ((s64)(a) * ((1 << g) - d)) >> g;
+    return (prev * 7 + cur * 6 - next) / 12;
 }
 
-UNUSED s32 sub_8085798(s32 a, s32 b, s32 c) { return ((c - a) + ((c - a) >> 1)) - (b >> 1); }
-
-// same as sub_808575C
-UNUSED s32 sub_80857A4(s32 a, s32 b, s32 c, s32 d, s32 e, s32 f, u8 g)
+UNUSED inline s32 WeightedRight(s32 prev, s32 cur, s32 next)
 {
-    a = c - a;
-    a += a >> 1;
-    a -= (b >> 1);
-    return ((s64)(a) * ((1 << g) - d)) >> g;
+    return (-prev + cur * 6 + next * 7) / 12;
 }
 
-UNUSED s32 sub_80857E0(s32 a, s32 b, s32 c) { return ((c - a) + ((c - a) >> 1)) - (b >> 1); }
-
-UNUSED s32 sub_80857EC(s32 a, s32 b, s32 c, s32 d, s32 e, s32 f, u8 g)
+UNUSED inline s32 WeightedLeft2(s32 prev, s32 cur, s32 next)
 {
-    s32 h = ((s64)(b - a) * (s64)(f + (1 << g))) >> g;
-    s64 i = ((s64)(c - b) * (s64)((1 << g) - f)) >> g;
-    s64 h64 = h;
-    s64 j = ((s32)(i - h) * (s64)((1 << (g - 1)) + (e >> 1))) >> g;
-    return ((s64)(j + h64) * (s64)((1 << g) - d)) >> g;
+    return (prev + cur * 8 - next) >> 3;
 }
 
-UNUSED s32 sub_80858A4(s32 a, s32 b, s32 c, s32 d, s32 e, s32 f, u8 g)
+UNUSED inline s32 WeightedRight2(s32 prev, s32 cur, s32 next)
 {
-    s32 h = ((s64)(b - a) * (s64)(f + (1 << g))) >> g;
-    s64 i = ((s64)(c - b) * (s64)((1 << g) - f)) >> g;
-    s64 h64 = h;
-    s64 j = ((s32)(i - h) * (s64)((1 << (g - 1)) - (e >> 1))) >> g;
-    return ((s64)(j + h64) * (s64)((1 << g) - d)) >> g;
+    return (-prev + cur * 8 + next) >> 3;
 }
 
-UNUSED s32 sub_808595C(s32 a, s32 b, s32 c)
+inline s32 DeltaScaled(s32 start, s32 end, s32 t, UNUSED s32 adjust, UNUSED s32 offset, u8 n)
 {
-    s32 e = (b - a);
-    s32 f = (c - b);
-    f -= e;
-    f >>= 1;
-    return e + f;
+    return (s64)(end - start) * (BitValue(n) - t) >> n;
 }
 
-s16 sub_8085968(s16 *unk28, u16 param1)
+inline s32 Delta(s32 start, s32 end)
 {
-    s32 r7, r3, r5;
-    u32 r0;
-    r7 = (4095 - param1);
-
-    r7 = (r7 * (SQUARE(r7) >> 12)) >> 12; // (r7 * ((r7 * r7) / 4096)) / 4096
-    r0 = (r7 * unk28[0] * 171) >> 10; // / 1024
-    unk28++;
-
-    r3 = SQUARE(param1) >> 12; // (r1 * r1) / 1024
-    r7 = (r3 * param1) >> 12; // (r3 * r1) / 1024
-    r0 += (unk28[0] * (((((r3 * param1) >> 13) - r3) + gUnknown_080E0290[0])));
-    unk28++;
-
-    r0 += (unk28[0] * (((((param1 + r3)) - r7) >> 1) + gUnknown_080E0290[1]));
-    r0 += ((r7 * unk28[1] * 171) >> 10);
-
-    return r0 / 4096;
+    return end - start;
 }
 
-u16 sub_80859F4(s16 *unk28, u16 unk5C)
+inline s32 CurveOffsetScaled(s32 prev, s32 cur, s32 next, s32 t, UNUSED s32 adjust, UNUSED s32 offset, u8 n)
 {
-    s32 r7, r3, r5;
-    u32 r0;
+    prev = next - prev;
+    prev += prev >> 1;
+    prev -= (cur >> 1);
 
-    s16 *r4 = &unk28[unk5C / 4096];
-    u16 r1 = unk5C % 4096;
-    r7 = (4095 - r1);
+    return (s64)prev * (BitValue(n) - t) >> n;
+}
 
-    r7 = (r7 * (SQUARE(r7) >> 12)) >> 12; // (r7 * ((r7 * r7) / 4096)) / 4096
-    r0 = (r7 * r4[0] * 171) >> 10; // / 1024
+inline s32 CurveOffset(s32 prev, s32 cur, s32 next)
+{
+    s32 delta = Delta(prev, next);
 
-    r3 = SQUARE(r1) >> 12; // (r1 * r1) / 1024
-    r7 = (r3 * r1) >> 12; // (r3 * r1) / 1024
+    return delta + (delta >> 1) - (cur >> 1);
+}
 
-    r0 += (r4[1] * (((((r3 * r1) >> 13) - r3) + gUnknown_080E0290[0])));
+UNUSED inline s32 CurveOffsetScaled2(s32 prev, s32 cur, s32 next, s32 t, s32 adjust, s32 offset, u8 n)
+{
+    return CurveOffsetScaled(prev, cur, next, t, adjust, offset, n);
+}
 
-    r4 += 2;
+UNUSED inline s32 CurveOffset2(s32 prev, s32 cur, s32 next)
+{
+    return CurveOffset(prev, cur, next);
+}
 
-    r0 += (r4[0] * (((((r1 + r3)) - r7) >> 1) + gUnknown_080E0290[1]));
-    r0 += ((r7 * r4[1] * 171) >> 10);
+UNUSED inline s32 DeltaCurveOffsetScaled(s32 prev, s32 cur, s32 next, s32 t, s32 adjust, s32 offset, u8 n)
+{
+    s32 prevDelta = DeltaScaled(prev, cur, -offset, adjust, offset, n);
+    s32 nextDelta = DeltaScaled(cur, next, offset, adjust, offset, n);
+#ifndef NON_MATCHING
+    s64 tmp = prevDelta;
+#endif
+    s64 interpolatedDelta = ((s64)Delta(prevDelta, nextDelta) * ((BitValue(n - 1)) + (adjust >> 1))) >> n;
 
-    r0 *= 1024;
-    r0 /= 1024;
-    return r0 / 4096;
+    return ((s64)(interpolatedDelta + prevDelta) * (BitValue(n) - t)) >> n;
+}
+
+UNUSED inline s32 DeltaCurveOffsetScaledInverse(s32 prev, s32 cur, s32 next, s32 t, s32 adjust, s32 offset, u8 n)
+{
+    s32 prevDelta = DeltaScaled(prev, cur, -offset, adjust, offset, n);
+    s32 nextDelta = DeltaScaled(cur, next, offset, adjust, offset, n);
+#ifndef NON_MATCHING
+    s64 tmp = prevDelta;
+#endif
+    s64 interpolatedDelta = ((s64)Delta(prevDelta, nextDelta) * ((BitValue(n - 1)) - (adjust >> 1))) >> n;
+
+    return ((s64)(interpolatedDelta + prevDelta) * (BitValue(n) - t)) >> n;
+}
+
+UNUSED inline s32 DeltaCentral(s32 prev, s32 cur, s32 next)
+{
+    s32 delta = Delta(prev, cur);
+
+    return delta + ((Delta(cur, next) - delta) >> 1);
+}
+
+inline s16 CubicBSplineSegment(s16 *b, u16 t)
+{
+    s32 result, t2, t3;
+
+    t3 = (Q_4_12(1.0) - 1) - t;
+    t3 = Q_4_12_TO_INT(t3 * Q_4_12_TO_INT(SQUARE(t3)));
+
+    result = Q_6_10_TO_INT(t3 * *b++ * (Q_6_10(1.0 / 6.0) + 1));
+
+    t2 = Q_4_12_TO_INT(SQUARE(t));
+    t3 = Q_4_12_TO_INT(t2 * t);
+
+    result += *b++ * ((t3 >> 1) - t2 + gCubicBSplineBasis[0]);
+    result += *b++ * (((t + t2 - t3) >> 1) + gCubicBSplineBasis[1]);
+    result += Q_6_10_TO_INT(t3 * *b * (Q_6_10(1.0 / 6.0) + 1));
+
+    return Q_4_12_TO_INT(result);
+}
+
+inline u16 CubicBSpline(s16 *b, u16 t)
+{
+    u32 result;
+    s32 t2, t3;
+
+    b = &b[t / Q_4_12(1.0)];
+    t %= Q_4_12(1.0);
+
+    t3 = (Q_4_12(1.0) - 1) - t;
+    t3 = Q_4_12_TO_INT(t3 * Q_4_12_TO_INT(SQUARE(t3)));
+
+    result = Q_6_10_TO_INT(t3 * b[0] * (Q_6_10(1.0 / 6.0) + 1));
+
+    t2 = Q_4_12_TO_INT(SQUARE(t));
+    t3 = Q_4_12_TO_INT(t2 * t);
+
+    result += b[1] * ((t3 >> 1) - t2 + gCubicBSplineBasis[0]);
+    result += (b += 2)[0] * (((t + t2 - t3) >> 1) + gCubicBSplineBasis[1]);
+    result += Q_6_10_TO_INT(t3 * b[1] * (Q_6_10(1.0 / 6.0) + 1));
+
+    return Q_4_12_TO_INT(Q_6_10_TO_INT(Q_6_10(result)));
 }
 
 #if (GAME == GAME_SA3)
-s16 sub_80B1560(s16 *unk28, u16 unk5C)
+inline s16 CubicBSplineDirect(s16 *b, u16 t)
 {
-    s32 r7, r3, r5;
-    u32 r0;
+    s32 result, t2, t3;
 
-    s16 *r4 = &unk28[unk5C / 4096];
-    u16 r1 = unk5C % 4096;
-    r7 = (4095 - r1);
+    b = &b[t / Q_4_12(1.0)];
+    t %= Q_4_12(1.0);
 
-    r7 = (r7 * (SQUARE(r7) >> 12)) >> 12; // (r7 * ((r7 * r7) / 4096)) / 4096
-    r0 = (r7 * r4[0] * 171) >> 10; // / 1024
+    t3 = (Q_4_12(1.0) - 1) - t;
+    t3 = Q_4_12_TO_INT(t3 * Q_4_12_TO_INT(SQUARE(t3)));
 
-    r3 = SQUARE(r1) >> 12; // (r1 * r1) / 1024
-    r7 = (r3 * r1) >> 12; // (r3 * r1) / 1024
+    result = Q_6_10_TO_INT(t3 * b[0] * (Q_6_10(1.0 / 6.0) + 1));
 
-    r0 += (r4[1] * (((((r3 * r1) >> 13) - r3) + gUnknown_080DBE54[0])));
+    t2 = Q_4_12_TO_INT(SQUARE(t));
+    t3 = Q_4_12_TO_INT(t2 * t);
 
-    r4 += 2;
+    result += b[1] * ((t3 >> 1) - t2 + gCubicBSplineBasis[0]);
+    result += (b += 2)[0] * (((t + t2 - t3) >> 1) + gCubicBSplineBasis[1]);
+    result += Q_6_10_TO_INT(t3 * b[1] * (Q_6_10(1.0 / 6.0) + 1));
 
-    r0 += (r4[0] * (((((r1 + r3)) - r7) >> 1) + gUnknown_080DBE54[1]));
-    r0 += ((r7 * r4[1] * 171) >> 10);
-
-    r0 *= 16;
-    r0 /= 16;
-    return r0 / 4096;
+    return Q_4_12_TO_INT(result);
 }
 #endif
 
-UNUSED void sub_8085A88(UNK_8085D14 *p1)
+UNUSED s32 BezierCubicInterpolate(s32 p0, s32 p1, s32 p2, s32 p3, s32 t, u8 n)
 {
-    p1->unk0 = 0;
-    p1->unk2 = 0x400;
-    p1->unk4 = 0x400;
-    // TODO: probably wrong type
-    *(u32 *)&p1->unk8 = 0;
-    *(u32 *)&p1->unkC = 0;
+    s32 t2 = SQUARE((s64)t) >> n;
+    s32 t3 = (s64)t2 * t >> n;
+
+    s64 invT = BitValue(n) - t;
+    s32 invT2 = SQUARE(invT) >> n;
+    s32 invT3 = invT2 * invT >> n;
+
+    return ((s64)invT3 * p0 +
+            ((s64)invT2 * t >> n) * p1 * 3 +
+            (invT * t2 >> n) * p2 * 3 +
+            (s64)t3 * p3) >> n;
 }
 
-UNUSED void sub_8085A9C(UNK_8085D14 *p1, u8 p2)
+UNUSED s32 HermiteCubicInterpolate(s32 p0, s32 m0, s32 m1, s32 p1, s32 t, u8 n)
 {
-    u16 dist = Sqrt(SQUARE(p1->unk0) + SQUARE(p1->unk2) + SQUARE(p1->unk4));
-    u32 thing = (p2 << 1);
-    s32 div = (1 << thing) / dist;
-    p1->unk0 = (div * p1->unk0) >> p2;
-    p1->unk2 = (div * p1->unk2) >> p2;
-    p1->unk4 = (div * p1->unk4) >> p2;
+    s32 t2 = SQUARE((s64)t) >> n;
+    s32 t3 = (s64)t2 * t >> n;
+
+    return ((s64)p0 * ((t3 - t2) * 2 - t2 + BitValue(n)) +
+            (s64)m0 * (-t2 + t3 - t2 + t) +
+            (s64)p1 * (t2 * 3 - t3 - t3) +
+            (s64)m1 * (-t2 + t3)) >> n;
 }
 
-UNUSED s32 sub_8085B00(UNK_8085D14 *p1, UNK_8085D14 *p2, u8 p4)
+UNUSED inline void Transform2D_Init(Transform2D *transform)
 {
-    u32 something = p4;
-    return ((p1->unk0 * p2->unk0) + (p1->unk2 * p2->unk2) + (p1->unk4 * p2->unk4)) >> p4;
+    transform->rotation = 0;
+    transform->scaleX = Q_6_10(1.0);
+    transform->scaleY = Q_6_10(1.0);
+    transform->translation.x = 0;
+    transform->translation.y = 0;
 }
 
-UNUSED void sub_8085B34(UNK_8085D14 *p1, UNK_8085D14 *p2, UNK_8085D14 *p3, u8 p4)
+UNUSED void Transform2D_Apply(Transform2D *local, Transform2D *parent, Transform2D *out)
 {
-    u32 something = p4;
-    p3->unk0 = ((p1->unk2 * p2->unk4) - (p1->unk4 * p2->unk2)) >> something;
-    p3->unk2 = ((p1->unk4 * p2->unk0) - (p1->unk0 * p2->unk4)) >> something;
-    p3->unk4 = ((p1->unk0 * p2->unk2) - (p1->unk2 * p2->unk0)) >> something;
+    s32 x, y;
+
+    if (parent->scaleX != Q_6_10(1.0)) {
+        x = Q_6_10_MUL(parent->scaleX, local->translation.x);
+        out->scaleX = Q_6_10_MUL(parent->scaleX, local->scaleX);
+    } else {
+        x = local->translation.x;
+    }
+
+    if (parent->scaleY != Q_6_10(1.0)) {
+        y = Q_6_10_MUL(parent->scaleY, local->translation.y);
+        out->scaleY = Q_6_10_MUL(parent->scaleY, local->scaleY);
+    } else {
+        y = local->translation.y;
+    }
+
+    if (parent->rotation) {
+        out->translation.x = parent->translation.x + (Q_MUL(x, COS_24_8(parent->rotation)) - Q_MUL(y, SIN_24_8(parent->rotation)));
+        out->translation.y = parent->translation.y + (Q_MUL(x, SIN_24_8(parent->rotation)) + Q_MUL(y, COS_24_8(parent->rotation)));
+    } else {
+        out->translation.x = parent->translation.x + x;
+        out->translation.y = parent->translation.y + y;
+    }
+
+    out->rotation = CLAMP_SIN_PERIOD(local->rotation + parent->rotation);
 }
 
-UNUSED void sub_8085B90(UNK_8085D14 *p1)
+static void Transform2D_ApplyToLocal(Transform2D *local, Transform2D *parent)
 {
-    p1->unk4 = 0;
-    p1->unk2 = 0;
-    p1->unk0 = 0;
+    s32 x, y;
 
-    p1->unk6 = 0x400;
+    if (parent->scaleX != Q_6_10(1.0)) {
+        x = Q_6_10_MUL(parent->scaleX, local->translation.x);
+        local->scaleX = Q_6_10_MUL(parent->scaleX, local->scaleX);
+    } else {
+        x = local->translation.x;
+    }
+
+    if (parent->scaleY != Q_6_10(1.0)) {
+        y = Q_6_10_MUL(parent->scaleY, local->translation.y);
+        local->scaleY = Q_6_10_MUL(parent->scaleY, local->scaleY);
+    } else {
+        y = local->translation.y;
+    }
+
+    if (parent->rotation) {
+        local->translation.x = parent->translation.x + (Q_MUL(x, COS_24_8(parent->rotation)) - Q_MUL(y, SIN_24_8(parent->rotation)));
+        local->translation.y = parent->translation.y + (Q_MUL(x, SIN_24_8(parent->rotation)) + Q_MUL(y, COS_24_8(parent->rotation)));
+    } else {
+        local->translation.x = parent->translation.x + x;
+        local->translation.y = parent->translation.y + y;
+    }
+
+    local->rotation = CLAMP_SIN_PERIOD(local->rotation + parent->rotation);
 }
 
-UNUSED void sub_8085BA0(UNK_8085D14 *p1)
+UNUSED void Transform2D_ApplyToParent(Transform2D *local, Transform2D *parent)
 {
-    p1->unk0 = -p1->unk0;
-    p1->unk2 = -p1->unk2;
-    p1->unk4 = -p1->unk4;
+    s32 x, y;
+
+    if (parent->scaleX != Q_6_10(1.0)) {
+        x = Q_6_10_MUL(parent->scaleX, local->translation.x);
+        parent->scaleX = Q_6_10_MUL(parent->scaleX, local->scaleX);
+    } else {
+        x = local->translation.x;
+    }
+
+    if (parent->scaleY != Q_6_10(1.0)) {
+        y = Q_6_10_MUL(parent->scaleY, local->translation.y);
+        parent->scaleY = Q_6_10_MUL(parent->scaleY, local->scaleY);
+    } else {
+        y = local->translation.y;
+    }
+
+    if (parent->rotation) {
+        parent->translation.x += Q_MUL(x, COS_24_8(parent->rotation)) - Q_MUL(y, SIN_24_8(parent->rotation));
+        parent->translation.y += Q_MUL(x, SIN_24_8(parent->rotation)) + Q_MUL(y, COS_24_8(parent->rotation));
+    } else {
+        parent->translation.x += x;
+        parent->translation.y += y;
+    }
+
+    parent->rotation = CLAMP_SIN_PERIOD(local->rotation + parent->rotation);
 }
 
-UNUSED void sub_8085BB4(UNK_8085D14 *p1, u16 rad)
+UNUSED void Transform2D_Invert(Transform2D *transform)
 {
-    s32 sin;
-    rad = rad >> 1;
-    sin = SIN(rad) >> 4;
-    p1->unk0 = sin;
-    p1->unk2 = 0;
-    p1->unk4 = 0;
-    p1->unk6 = COS(rad) >> 4;
+    if (transform->scaleX != Q_6_10(1.0)) {
+        transform->scaleX = Div(SQUARE(Q_6_10(1.0)), transform->scaleX);
+        transform->translation.x = Q_6_10_MUL(transform->scaleX, transform->translation.x);
+    }
+
+    if (transform->scaleY != Q_6_10(1.0)) {
+        transform->scaleY = Div(SQUARE(Q_6_10(1.0)), transform->scaleY);
+        transform->translation.y = Q_6_10_MUL(transform->scaleY, transform->translation.y);
+    }
+
+    transform->rotation = CLAMP_SIN_PERIOD(SIN_PERIOD - transform->rotation);
+    if (transform->rotation) {
+        Vec2_32 translation = {
+            Q_MUL(-transform->translation.x, COS_24_8(transform->rotation)) - Q_MUL(-transform->translation.y, SIN_24_8(transform->rotation)),
+            Q_MUL(-transform->translation.x, SIN_24_8(transform->rotation)) + Q_MUL(-transform->translation.y, COS_24_8(transform->rotation)),
+        };
+
+        transform->translation.y = translation.y;
+        transform->translation.x = translation.x;
+    } else {
+        NEGATE(transform->translation.x);
+        NEGATE(transform->translation.y);
+    }
 }
 
-UNUSED void sub_8085BEC(UNK_8085D14 *p1, u16 rad)
+inline void Vec3_Normalize(Vec3_16 *v, u8 n)
 {
-    s32 sin;
-    rad = rad >> 1;
-    sin = SIN(rad) >> 4;
-    p1->unk0 = 0;
-    p1->unk2 = sin;
-    p1->unk4 = 0;
-    p1->unk6 = COS(rad) >> 4;
+    u16 dist = Sqrt(SQUARE(v->x) + SQUARE(v->y) + SQUARE(v->z));
+    s32 scale = BitValue(2 * n) / dist;
+
+    v->x = scale * v->x >> n;
+    v->y = scale * v->y >> n;
+    v->z = scale * v->z >> n;
 }
 
-UNUSED void sub_8085C24(UNK_8085D14 *p1, u16 rad)
+UNUSED inline s32 Vec3_Dot(Vec3_16 *u, Vec3_16 *v, u8 n)
 {
-    s32 sin;
-    rad = rad >> 1;
-    sin = SIN(rad) >> 4;
-    p1->unk0 = 0;
-    p1->unk2 = 0;
-    p1->unk4 = sin;
-    p1->unk6 = COS(rad) >> 4;
+    return (u->x * v->x + u->y * v->y + u->z * v->z) >> n;
 }
 
-UNUSED void sub_8085C5C(UNK_8085D14 *p1, u16 rad, UNK_8085D14 *p3)
+inline void Vec3_Cross(Vec3_16 *u, Vec3_16 *v, Vec3_16 *out, u8 n)
 {
-    s32 sin;
-    rad = rad >> 1;
-    sin = SIN(rad) >> 4;
-    p1->unk0 = (sin * p3->unk0) >> 10;
-    p1->unk2 = (sin * p3->unk2) >> 10;
-    p1->unk4 = (sin * p3->unk4) >> 10;
-    p1->unk6 = COS(rad) >> 4;
+    out->x = (u->y * v->z - u->z * v->y) >> n;
+    out->y = (u->z * v->x - u->x * v->z) >> n;
+    out->z = (u->x * v->y - u->y * v->x) >> n;
 }
 
-UNUSED void sub_8085CA8(UNK_8085D14 *p1)
+UNUSED inline void Quaternion_Init(Quaternion *quat)
 {
-    u8 i;
-    UNK_8085D14 *curr = p1;
-    // memset
-    for (i = 0; i < 32; i += 4) {
-#ifndef NON_MATCHING
-        *((u32 *)curr)++ = 0;
+    quat->x = quat->y = quat->z = 0;
+    quat->w = Q_6_10(1.0);
+}
+
+UNUSED void Quaternion_Normalize(Quaternion *quat)
+{
+    s32 scale = SQUARE(Q_6_10(1.0)) / Sqrt(SQUARE(quat->x) + SQUARE(quat->y) + SQUARE(quat->z) + SQUARE(quat->w));
+
+    quat->x = Q_6_10_MUL(quat->x, scale);
+    quat->y = Q_6_10_MUL(quat->y, scale);
+    quat->z = Q_6_10_MUL(quat->z, scale);
+    quat->w = Q_6_10_MUL(quat->w, scale);
+}
+
+UNUSED void Quaternion_Apply(Quaternion *local, Quaternion *parent, Quaternion *out)
+{
+    out->x = Q_6_10_TO_INT(local->w * parent->x + local->x * parent->w + local->y * parent->z - local->z * parent->y);
+    out->y = Q_6_10_TO_INT(local->w * parent->y - local->x * parent->z + local->y * parent->w + local->z * parent->x);
+    out->z = Q_6_10_TO_INT(local->w * parent->z + local->x * parent->y - local->y * parent->x + local->z * parent->w);
+    out->w = Q_6_10_TO_INT(local->w * parent->w - local->x * parent->x - local->y * parent->y - local->z * parent->z);
+}
+
+UNUSED void Quaternion_ApplyToLocal(Quaternion *local, Quaternion *parent)
+{
+    s16 x = local->x;
+    s16 y = local->y;
+    s16 z = local->z;
+
+    local->x = Q_6_10_TO_INT(local->w * parent->x + x * parent->w + y * parent->z - z * parent->y);
+    local->y = Q_6_10_TO_INT(local->w * parent->y - x * parent->z + y * parent->w + z * parent->x);
+    local->z = Q_6_10_TO_INT(local->w * parent->z + x * parent->y - y * parent->x + z * parent->w);
+    local->w = Q_6_10_TO_INT(local->w * parent->w - x * parent->x - y * parent->y - z * parent->z);
+}
+
+UNUSED void Quaternion_ApplyToParent(Quaternion *local, Quaternion *parent)
+{
+    s16 x = parent->x;
+    s16 y = parent->y;
+    s16 z = parent->z;
+
+    parent->x = Q_6_10_TO_INT(local->w * x + local->x * parent->w + local->y * z - local->z * y);
+    parent->y = Q_6_10_TO_INT(local->w * y - local->x * z + local->y * parent->w + local->z * x);
+    parent->z = Q_6_10_TO_INT(local->w * z + local->x * y - local->y * x + local->z * parent->w);
+    parent->w = Q_6_10_TO_INT(local->w * parent->w - local->x * x - local->y * y - local->z * z);
+}
+
+UNUSED inline void Quaternion_Conjugate(Quaternion *quat)
+{
+    quat->x = -quat->x;
+    quat->y = -quat->y;
+    quat->z = -quat->z;
+}
+
+UNUSED void Quaternion_Invert(Quaternion *quat)
+{
+    s32 scale = SQUARE(Q_6_10(1.0)) / Sqrt(SQUARE(quat->x) + SQUARE(quat->y) + SQUARE(quat->z) + SQUARE(quat->w));
+
+    quat->x = Q_6_10_MUL(-quat->x, scale);
+    quat->y = Q_6_10_MUL(-quat->y, scale);
+    quat->z = Q_6_10_MUL(-quat->z, scale);
+    quat->w = Q_6_10_MUL(quat->w, scale);
+}
+
+UNUSED inline void Quaternion_RotateX(Quaternion *quat, u16 angle)
+{
+    s16 angleSin;
+
+    HALVE(angle);
+    angleSin = Q_2_14_TO_Q_6_10(SIN(angle));
+
+    quat->x = angleSin;
+    quat->y = 0;
+    quat->z = 0;
+    quat->w = Q_2_14_TO_Q_6_10(COS(angle));
+}
+
+UNUSED inline void Quaternion_RotateY(Quaternion *quat, u16 angle)
+{
+    s16 angleSin; 
+
+    HALVE(angle);
+    angleSin = Q_2_14_TO_Q_6_10(SIN(angle));
+
+    quat->x = 0;
+    quat->y = angleSin;
+    quat->z = 0;
+    quat->w = Q_2_14_TO_Q_6_10(COS(angle));
+}
+
+UNUSED inline void Quaternion_RotateZ(Quaternion *quat, u16 angle)
+{
+    s16 angleSin; 
+
+    HALVE(angle);
+    angleSin = Q_2_14_TO_Q_6_10(SIN(angle));
+
+    quat->x = 0;
+    quat->y = 0;
+    quat->z = angleSin;
+    quat->w = Q_2_14_TO_Q_6_10(COS(angle));
+}
+
+UNUSED inline void Quaternion_RotateAxis(Quaternion *quat, u16 angle, Vec3_16 *axis)
+{
+    s16 angleSin;
+
+    HALVE(angle);
+    angleSin = Q_2_14_TO_Q_6_10(SIN(angle));
+
+    quat->x = Q_6_10_MUL(angleSin, axis->x);
+    quat->y = Q_6_10_MUL(angleSin, axis->y);
+    quat->z = Q_6_10_MUL(angleSin, axis->z);
+    quat->w = Q_2_14_TO_Q_6_10(COS(angle));
+}
+
+inline void Transform3D_Clear(Transform3D *transform)
+{
+#if PORTABLE
+    // Modern GCC doesn't accept l-value cast increments.
+    // Thankfully, we only need a memset to bypass that!
+    memset(transform, 0, sizeof(Transform3D));
 #else
-        u32 *p = (u32 *)curr;
-        *p = 0;
-        p++;
-        curr = (UNK_8085D14 *)p;
-#endif
-    }
-}
-
-UNUSED void sub_8085CC0(UNK_8085D14 *p1)
-{
     u8 i;
-    UNK_8085D14 *curr = p1;
-    // memset
-    for (i = 0; i < 32; i += 4) {
-#ifndef NON_MATCHING
-        *((u32 *)curr)++ = 0;
+
+    for (i = 0; i < sizeof(Transform3D); i += 4) {
+        *((u32 *)transform)++ = 0;
+    }
+#endif
+}
+
+inline void Transform3D_Init(Transform3D *transform)
+{
+    Transform3D_Clear(transform);
+
+    transform->linear[0][0] = transform->linear[1][1] = transform->linear[2][2] = Q_6_10(1.0);
+}
+
+UNUSED inline void Transform3D_InitTranslation(Transform3D *transform, s32 x, s32 y, s32 z)
+{
+    Transform3D_Init(transform);
+
+    transform->translation.v32.x = x;
+    transform->translation.v32.y = y;
+    transform->translation.v32.z = z;
+}
+
+UNUSED inline void Transform3D_InitIdentity(Transform3D *transform, s32 m00, s32 m11, s32 m22)
+{
+    Transform3D_Init(transform);
+
+    transform->linear[0][0] = m00;
+    transform->linear[1][1] = m11;
+    transform->linear[2][2] = m22;
+}
+
+static void Transform3D_Apply(Transform3D *local, Transform3D *parent, Transform3D *out)
+{
+    out->linear[0][0] = Q_6_10_TO_INT(local->linear[0][0] * parent->linear[0][0] + local->linear[0][1] * parent->linear[1][0] + local->linear[0][2] * parent->linear[2][0]);
+    out->linear[0][1] = Q_6_10_TO_INT(local->linear[0][0] * parent->linear[0][1] + local->linear[0][1] * parent->linear[1][1] + local->linear[0][2] * parent->linear[2][1]);
+    out->linear[0][2] = Q_6_10_TO_INT(local->linear[0][0] * parent->linear[0][2] + local->linear[0][1] * parent->linear[1][2] + local->linear[0][2] * parent->linear[2][2]);
+
+    out->linear[1][0] = Q_6_10_TO_INT(local->linear[1][0] * parent->linear[0][0] + local->linear[1][1] * parent->linear[1][0] + local->linear[1][2] * parent->linear[2][0]);
+    out->linear[1][1] = Q_6_10_TO_INT(local->linear[1][0] * parent->linear[0][1] + local->linear[1][1] * parent->linear[1][1] + local->linear[1][2] * parent->linear[2][1]);
+    out->linear[1][2] = Q_6_10_TO_INT(local->linear[1][0] * parent->linear[0][2] + local->linear[1][1] * parent->linear[1][2] + local->linear[1][2] * parent->linear[2][2]);
+
+    out->linear[2][0] = Q_6_10_TO_INT(local->linear[2][0] * parent->linear[0][0] + local->linear[2][1] * parent->linear[1][0] + local->linear[2][2] * parent->linear[2][0]);
+    out->linear[2][1] = Q_6_10_TO_INT(local->linear[2][0] * parent->linear[0][1] + local->linear[2][1] * parent->linear[1][1] + local->linear[2][2] * parent->linear[2][1]);
+    out->linear[2][2] = Q_6_10_TO_INT(local->linear[2][0] * parent->linear[0][2] + local->linear[2][1] * parent->linear[1][2] + local->linear[2][2] * parent->linear[2][2]);
+
+    out->translation.v32.x = Q_6_10_TO_INT((s64)local->translation.v32.x * parent->linear[0][0] + (s64)local->translation.v32.y * parent->linear[1][0] + (s64)local->translation.v32.z * parent->linear[2][0] + parent->translation.v32.x);
+    out->translation.v32.y = Q_6_10_TO_INT((s64)local->translation.v32.x * parent->linear[0][1] + (s64)local->translation.v32.y * parent->linear[1][1] + (s64)local->translation.v32.z * parent->linear[2][1] + parent->translation.v32.y);
+    out->translation.v32.z = Q_6_10_TO_INT((s64)local->translation.v32.x * parent->linear[0][2] + (s64)local->translation.v32.y * parent->linear[1][2] + (s64)local->translation.v32.z * parent->linear[2][2] + parent->translation.v32.z);
+}
+
+UNUSED void Transform3D_ApplyToLocal(Transform3D *local, Transform3D *parent)
+{
+    s32 x, y, z;
+
+    x = local->linear[0][0];
+    y = local->linear[0][1];
+    z = local->linear[0][2];
+    local->linear[0][0] = Q_6_10_TO_INT(x * parent->linear[0][0] + y * parent->linear[1][0] + z * parent->linear[2][0]);
+    local->linear[0][1] = Q_6_10_TO_INT(x * parent->linear[0][1] + y * parent->linear[1][1] + z * parent->linear[2][1]);
+    local->linear[0][2] = Q_6_10_TO_INT(x * parent->linear[0][2] + y * parent->linear[1][2] + z * parent->linear[2][2]);
+
+    x = local->linear[1][0];
+    y = local->linear[1][1];
+    z = local->linear[1][2];
+    local->linear[1][0] = Q_6_10_TO_INT(x * parent->linear[0][0] + y * parent->linear[1][0] + z * parent->linear[2][0]);
+    local->linear[1][1] = Q_6_10_TO_INT(x * parent->linear[0][1] + y * parent->linear[1][1] + z * parent->linear[2][1]);
+    local->linear[1][2] = Q_6_10_TO_INT(x * parent->linear[0][2] + y * parent->linear[1][2] + z * parent->linear[2][2]);
+
+    x = local->linear[2][0];
+    y = local->linear[2][1];
+    z = local->linear[2][2];
+    local->linear[2][0] = Q_6_10_TO_INT(x * parent->linear[0][0] + y * parent->linear[1][0] + z * parent->linear[2][0]);
+    local->linear[2][1] = Q_6_10_TO_INT(x * parent->linear[0][1] + y * parent->linear[1][1] + z * parent->linear[2][1]);
+    local->linear[2][2] = Q_6_10_TO_INT(x * parent->linear[0][2] + y * parent->linear[1][2] + z * parent->linear[2][2]);
+
+    x = local->translation.v32.x;
+    y = local->translation.v32.y;
+    z = local->translation.v32.z;
+    local->translation.v32.x = Q_6_10_TO_INT((s64)x * parent->linear[0][0] + (s64)y * parent->linear[1][0] + (s64)z * parent->linear[2][0] + parent->translation.v32.x);
+    local->translation.v32.y = Q_6_10_TO_INT((s64)x * parent->linear[0][1] + (s64)y * parent->linear[1][1] + (s64)z * parent->linear[2][1] + parent->translation.v32.y);
+    local->translation.v32.z = Q_6_10_TO_INT((s64)x * parent->linear[0][2] + (s64)y * parent->linear[1][2] + (s64)z * parent->linear[2][2] + parent->translation.v32.z);
+}
+
+UNUSED void Transform3D_ApplyToParent(Transform3D *local, Transform3D *parent)
+{
+    s32 x, y, z;
+
+    parent->translation.v32.x = Q_6_10_TO_INT((s64)local->translation.v32.x * parent->linear[0][0] + (s64)local->translation.v32.y * parent->linear[1][0] + (s64)local->translation.v32.z * parent->linear[2][0] + parent->translation.v32.x);
+    parent->translation.v32.y = Q_6_10_TO_INT((s64)local->translation.v32.x * parent->linear[0][1] + (s64)local->translation.v32.y * parent->linear[1][1] + (s64)local->translation.v32.z * parent->linear[2][1] + parent->translation.v32.y);
+    parent->translation.v32.z = Q_6_10_TO_INT((s64)local->translation.v32.x * parent->linear[0][2] + (s64)local->translation.v32.y * parent->linear[1][2] + (s64)local->translation.v32.z * parent->linear[2][2] + parent->translation.v32.z);
+
+    x = parent->linear[0][0];
+    y = parent->linear[1][0];
+    z = parent->linear[2][0];
+    parent->linear[0][0] = Q_6_10_TO_INT(local->linear[0][0] * x + local->linear[0][1] * y + local->linear[0][2] * z);
+    parent->linear[1][0] = Q_6_10_TO_INT(local->linear[1][0] * x + local->linear[1][1] * y + local->linear[1][2] * z);
+    parent->linear[2][0] = Q_6_10_TO_INT(local->linear[2][0] * x + local->linear[2][1] * y + local->linear[2][2] * z);
+
+    x = parent->linear[0][1];
+    y = parent->linear[1][1];
+    z = parent->linear[2][1];
+    parent->linear[0][1] = Q_6_10_TO_INT(local->linear[0][0] * x + local->linear[0][1] * y + local->linear[0][2] * z);
+    parent->linear[1][1] = Q_6_10_TO_INT(local->linear[1][0] * x + local->linear[1][1] * y + local->linear[1][2] * z);
+    parent->linear[2][1] = Q_6_10_TO_INT(local->linear[2][0] * x + local->linear[2][1] * y + local->linear[2][2] * z);
+
+    x = parent->linear[0][2];
+    y = parent->linear[1][2];
+    z = parent->linear[2][2];
+    parent->linear[0][2] = Q_6_10_TO_INT(local->linear[0][0] * x + local->linear[0][1] * y + local->linear[0][2] * z);
+    parent->linear[1][2] = Q_6_10_TO_INT(local->linear[1][0] * x + local->linear[1][1] * y + local->linear[1][2] * z);
+    parent->linear[2][2] = Q_6_10_TO_INT(local->linear[2][0] * x + local->linear[2][1] * y + local->linear[2][2] * z);
+}
+
+UNUSED void Transform3D_PointTransform(Vec3_32 *v, Transform3D *transform, Vec3_32 *out)
+{
+    out->x = Q_6_10_TO_INT((s64)v->x * transform->linear[0][0] + (s64)v->y * transform->linear[1][0] + (s64)v->z * transform->linear[2][0] + transform->translation.v32.x);
+    out->y = Q_6_10_TO_INT((s64)v->x * transform->linear[0][1] + (s64)v->y * transform->linear[1][1] + (s64)v->z * transform->linear[2][1] + transform->translation.v32.y);
+    out->z = Q_6_10_TO_INT((s64)v->x * transform->linear[0][2] + (s64)v->y * transform->linear[1][2] + (s64)v->z * transform->linear[2][2] + transform->translation.v32.z);
+}
+
+UNUSED void Transform3D_PointTransformIP(Vec3_32 *v, Transform3D *transform)
+{
+#ifdef BUGFIX
+    s32 x = v->x;
+    s32 y = v->y;
+
+    v->x = Q_6_10_TO_INT((s64)x * transform->linear[0][0] + (s64)y * transform->linear[1][0] + (s64)v->z * transform->linear[2][0] + transform->translation.v32.x);
+    v->y = Q_6_10_TO_INT((s64)x * transform->linear[0][1] + (s64)y * transform->linear[1][1] + (s64)v->z * transform->linear[2][1] + transform->translation.v32.y);
+    v->z = Q_6_10_TO_INT((s64)x * transform->linear[0][2] + (s64)y * transform->linear[1][2] + (s64)v->z * transform->linear[2][2] + transform->translation.v32.z);
 #else
-        u32 *p = (u32 *)curr;
-        *p = 0;
-        p++;
-        curr = (UNK_8085D14 *)p;
+    // This uses the already modified values rather than
+    // the originals for the y and z transforms
+    v->x = Q_6_10_TO_INT((s64)v->x * transform->linear[0][0] + (s64)v->y * transform->linear[1][0] + (s64)v->z * transform->linear[2][0] + transform->translation.v32.x);
+    v->y = Q_6_10_TO_INT((s64)v->x * transform->linear[0][1] + (s64)v->y * transform->linear[1][1] + (s64)v->z * transform->linear[2][1] + transform->translation.v32.y);
+    v->z = Q_6_10_TO_INT((s64)v->x * transform->linear[0][2] + (s64)v->y * transform->linear[1][2] + (s64)v->z * transform->linear[2][2] + transform->translation.v32.z);
+#endif
+}
+
+UNUSED void Transform3D_PointProject(Transform3D *transform, Vec3_32 *v, Vec3_32 *out)
+{
+    s32 scale = SQUARE(Q_6_10(1.0)) / Q_6_10_TO_INT((s64)v->x * transform->translation.v32.x + (s64)v->y * transform->translation.v32.y + (s64)v->z * transform->translation.v32.z + SQUARE(Q_6_10(1.0)));
+
+    out->x = Q_6_10_MUL(Q_6_10_TO_INT((s64)v->x * transform->linear[0][0] + (s64)v->y * transform->linear[0][1] + (s64)v->z * transform->linear[0][2]), scale);
+    out->y = Q_6_10_MUL(Q_6_10_TO_INT((s64)v->x * transform->linear[1][0] + (s64)v->y * transform->linear[1][1] + (s64)v->z * transform->linear[1][2]), scale);
+    out->z = Q_6_10_MUL(Q_6_10_TO_INT((s64)v->x * transform->linear[2][0] + (s64)v->y * transform->linear[2][1] + (s64)v->z * transform->linear[2][2]), scale);
+}
+
+UNUSED void Transform3D_PointProjectIP(Transform3D *transform, Vec3_32 *v)
+{
+    s32 x = v->x;
+    s32 y = v->y;
+
+    s32 scale = SQUARE(Q_6_10(1.0)) / Q_6_10_TO_INT(x * transform->translation.v32.x + y * transform->translation.v32.y + v->z * transform->translation.v32.z + SQUARE(Q_6_10(1.0)));
+
+    v->x = Q_6_10_MUL(Q_6_10_TO_INT((s64)x * transform->linear[0][0] + (s64)y * transform->linear[0][1] + (s64)v->z * transform->linear[0][2]), scale);
+    v->y = Q_6_10_MUL(Q_6_10_TO_INT((s64)x * transform->linear[1][0] + (s64)y * transform->linear[1][1] + (s64)v->z * transform->linear[1][2]), scale);
+    v->z = Q_6_10_MUL(Q_6_10_TO_INT((s64)x * transform->linear[2][0] + (s64)y * transform->linear[2][1] + (s64)v->z * transform->linear[2][2]), scale);
+}
+
+UNUSED void Transform3D_RotateX(Transform3D *transform, u16 angle)
+{
+    s16 angleSin, angleCos;
+
+    Transform3D_Init(transform);
+
+    angleSin = Q_2_14_TO_Q_6_10(SIN(angle));
+    angleCos = Q_2_14_TO_Q_6_10(COS(angle));
+
+    transform->linear[1][1] = angleCos;
+    transform->linear[1][2] = angleSin;
+    transform->linear[2][1] = -angleSin;
+    transform->linear[2][2] = angleCos;
+}
+
+UNUSED void Transform3D_RotateY(Transform3D *transform, u16 angle)
+{
+    s16 angleSin, angleCos;
+
+    Transform3D_Init(transform);
+
+    angleSin = Q_2_14_TO_Q_6_10(SIN(angle));
+    angleCos = Q_2_14_TO_Q_6_10(COS(angle));
+
+    transform->linear[0][0] = angleCos;
+    transform->linear[0][2] = -angleSin;
+    transform->linear[2][0] = angleSin;
+    transform->linear[2][2] = angleCos;
+}
+
+UNUSED void Transform3D_RotateZ(Transform3D *transform, u16 angle)
+{
+    s16 angleSin, angleCos;
+
+    Transform3D_Init(transform);
+
+    angleSin = Q_2_14_TO_Q_6_10(SIN(angle));
+    angleCos = Q_2_14_TO_Q_6_10(COS(angle));
+
+    transform->linear[0][0] = angleCos;
+    transform->linear[0][1] = angleSin;
+    transform->linear[1][0] = -angleSin;
+    transform->linear[1][1] = angleCos;
+}
+
+UNUSED void Transform3D_RotateAxis(Transform3D *transform, u16 angle, Vec3_16 *axis)
+{
+    s16 angleSin, xy, yz, xz;
+    s32 angleCos;
+
+    Transform3D_Init(transform);
+
+    angleSin = Q_2_14_TO_Q_6_10(SIN(angle));
+    angleCos = Q_2_14_TO_Q_6_10(COS(angle));
+
+    xy = Q_6_10_MUL(Q_6_10_MUL(axis->x, axis->y), Q_6_10(1.0) - angleCos);
+    yz = Q_6_10_MUL(Q_6_10_MUL(axis->y, axis->z), Q_6_10(1.0) - angleCos);
+    xz = Q_6_10_MUL(Q_6_10_MUL(axis->x, axis->z), Q_6_10(1.0) - angleCos);
+
+    transform->linear[0][0] = angleCos + Q_6_10_MUL(Q_6_10_SQUARE(axis->x), Q_6_10(1.0) - angleCos);
+    transform->linear[0][1] = xy + Q_6_10_MUL(axis->z, angleSin);
+    transform->linear[0][2] = xz - Q_6_10_MUL(axis->y, angleSin);
+
+    transform->linear[1][0] = xy - Q_6_10_MUL(axis->z, angleSin);
+    transform->linear[1][1] = angleCos + Q_6_10_MUL(Q_6_10_SQUARE(axis->y), Q_6_10(1.0) - angleCos);
+    transform->linear[1][2] = yz + Q_6_10_MUL(axis->x, angleSin);
+
+    transform->linear[2][0] = xz + Q_6_10_MUL(axis->y, angleSin);
+    transform->linear[2][1] = yz - Q_6_10_MUL(axis->x, angleSin);
+    transform->linear[2][2] = angleCos + Q_6_10_MUL(Q_6_10_SQUARE(axis->z), Q_6_10(1.0) - angleCos);
+}
+
+static void Transform3D_RotateXYZ(Transform3D *transform, u16 angleX, u16 angleY, u16 angleZ)
+{
+    s16 ySin = Q_2_14_TO_Q_6_10(SIN(angleY));
+    s16 yCos = Q_2_14_TO_Q_6_10(COS(angleY));
+
+    s16 xSin = Q_2_14_TO_Q_6_10(SIN(angleX));
+    s16 xCos = Q_2_14_TO_Q_6_10(COS(angleX));
+
+    s16 zSin = Q_2_14_TO_Q_6_10(SIN(angleZ));
+    s16 zCos = Q_2_14_TO_Q_6_10(COS(angleZ));
+
+    transform->linear[0][0] = Q_6_10_MUL(zCos, xCos) + Q_6_10_MUL(Q_6_10_MUL(zSin, ySin), xSin);
+    transform->linear[0][1] = Q_6_10_MUL(zSin, yCos);
+    transform->linear[0][2] = Q_6_10_MUL(-zCos, xSin) + Q_6_10_MUL(Q_6_10_MUL(zSin, ySin), xCos);
+
+    transform->linear[1][0] = Q_6_10_MUL(-zSin, xCos) + Q_6_10_MUL(xSin, Q_6_10_MUL(ySin, zCos));
+    transform->linear[1][1] = Q_6_10_MUL(zCos, yCos);
+    transform->linear[1][2] = Q_6_10_MUL(xSin, zSin) + Q_6_10_MUL(xCos, Q_6_10_MUL(ySin, zCos));
+
+    transform->linear[2][0] = Q_6_10_MUL(yCos, xSin);
+    transform->linear[2][1] = -ySin;
+    transform->linear[2][2] = Q_6_10_MUL(yCos, xCos);
+
+    transform->translation.v32.x = transform->translation.v32.y = transform->translation.v32.z = 0;
+}
+
+UNUSED void Transform3D_LookAt(Transform3D *transform, Vec3_32 *pos, Vec3_32 *target, Vec3_16 *originY)
+{
+    transform->translation.v32.x = pos->x;
+    transform->translation.v32.y = pos->y;
+    transform->translation.v32.z = pos->z;
+
+    Vec3_Sub(target, pos, (Vec3_16 *)transform->linear[2]);
+#if BUGFIX
+    if (Vec3_Dot((Vec3_16 *)transform->linear[2], (Vec3_16 *)transform->linear[2], 10) > 0) {
+#else
+    // This checks for the absolute component sum, rather than the squared magnitude.
+    // Basically, it means valid directions can be interpreted as degenerate, which is no good!
+    if (ABS(transform->linear[2][0] + transform->linear[2][1] + transform->linear[2][2]) > 32) {
+#endif
+        Vec3_Normalize((Vec3_16 *)transform->linear[2], 10);
+    } else {
+        transform->linear[2][0] = 0;
+        transform->linear[2][1] = 0;
+        transform->linear[2][2] = Q_6_10(1.0);
+    }
+
+    Vec3_Cross(originY, (Vec3_16 *)transform->linear[2], (Vec3_16 *)transform->linear[0], 10);
+#if BUGFIX
+    if (Vec3_Dot((Vec3_16 *)transform->linear[0], (Vec3_16 *)transform->linear[0], 10) > 0) {
+#else
+    if (ABS(transform->linear[0][0] + transform->linear[0][1] + transform->linear[0][2]) > 32) {
+#endif
+        Vec3_Normalize((Vec3_16 *)transform->linear[0], 10);
+    } else {
+        transform->linear[0][0] = Q_6_10(1.0);
+        transform->linear[0][1] = 0;
+        transform->linear[0][2] = 0;
+    }
+
+    Vec3_Cross((Vec3_16 *)transform->linear[2], (Vec3_16 *)transform->linear[0], (Vec3_16 *)transform->linear[1], 10);
+#if BUGFIX
+    if (Vec3_Dot((Vec3_16 *)transform->linear[1], (Vec3_16 *)transform->linear[1], 10) > 0) {
+#else
+    if (ABS(transform->linear[1][0] + transform->linear[1][1] + transform->linear[1][2]) > 32) {
+#endif
+        Vec3_Normalize((Vec3_16 *)transform->linear[1], 10);
+    } else {
+        transform->linear[1][0] = 0;
+        transform->linear[1][1] = Q_6_10(1.0);
+        transform->linear[1][2] = 0;
+    }
+}
+
+static void Transform3D_Transpose(Transform3D *transform)
+{
+    XOR_SWAP_2(transform->linear[0][1], transform->linear[1][0]);
+    XOR_SWAP_2(transform->linear[0][2], transform->linear[2][0]);
+    XOR_SWAP_2(transform->linear[1][2], transform->linear[2][1]);
+}
+
+UNUSED void Transform3D_Invert(Transform3D *transform)
+{
+    s32 scale = SQUARE(Q_6_10(1.0)) / (transform->linear[0][0] * Q_6_10_TO_INT(transform->linear[1][1] * transform->linear[2][2] - transform->linear[1][2] * transform->linear[2][1]) - transform->linear[0][1] * Q_6_10_TO_INT(transform->linear[1][0] * transform->linear[2][2] - transform->linear[1][2] * transform->linear[2][0]) + transform->linear[0][2] * Q_6_10_TO_INT(transform->linear[1][0] * transform->linear[2][1] - transform->linear[1][1] * transform->linear[2][0]));
+
+    Transform3D tmpTransform = *transform;
+
+    transform->linear[0][0] = Q_6_10_MUL(scale, Q_6_10_TO_INT(tmpTransform.linear[1][1] * tmpTransform.linear[2][2] - tmpTransform.linear[1][2] * tmpTransform.linear[2][1]));
+    transform->linear[0][1] = Q_6_10_MUL(-scale, Q_6_10_TO_INT(tmpTransform.linear[0][1] * tmpTransform.linear[2][2] - tmpTransform.linear[0][2] * tmpTransform.linear[2][1]));
+    transform->linear[0][2] = Q_6_10_MUL(scale, Q_6_10_TO_INT(tmpTransform.linear[0][1] * tmpTransform.linear[1][2] - tmpTransform.linear[0][2] * tmpTransform.linear[1][1]));
+    transform->linear[1][0] = Q_6_10_MUL(-scale, Q_6_10_TO_INT(tmpTransform.linear[1][0] * tmpTransform.linear[2][2] - tmpTransform.linear[1][2] * tmpTransform.linear[2][0]));
+    transform->linear[1][1] = Q_6_10_MUL(scale, Q_6_10_TO_INT(tmpTransform.linear[0][0] * tmpTransform.linear[2][2] - tmpTransform.linear[0][2] * tmpTransform.linear[2][0]));
+    transform->linear[1][2] = Q_6_10_MUL(-scale, Q_6_10_TO_INT(tmpTransform.linear[0][0] * tmpTransform.linear[1][2] - tmpTransform.linear[0][2] * tmpTransform.linear[1][0]));
+    transform->linear[2][0] = Q_6_10_MUL(scale, Q_6_10_TO_INT(tmpTransform.linear[1][0] * tmpTransform.linear[2][1] - tmpTransform.linear[1][1] * tmpTransform.linear[2][0]));
+    transform->linear[2][1] = Q_6_10_MUL(-scale, Q_6_10_TO_INT(tmpTransform.linear[0][0] * tmpTransform.linear[2][1] - tmpTransform.linear[0][1] * tmpTransform.linear[2][0]));
+    transform->linear[2][2] = Q_6_10_MUL(scale, Q_6_10_TO_INT(tmpTransform.linear[0][0] * tmpTransform.linear[1][1] - tmpTransform.linear[0][1] * tmpTransform.linear[1][0]));
+
+#if BUGFIX
+    transform->translation.v32.x = Q_6_10_TO_INT(-((s64)tmpTransform.translation.v32.x * tmpTransform.linear[0][0] + (s64)tmpTransform.translation.v32.y * tmpTransform.linear[1][0] + (s64)tmpTransform.translation.v32.z * tmpTransform.linear[2][0]));
+    transform->translation.v32.y = Q_6_10_TO_INT(-((s64)tmpTransform.translation.v32.x * tmpTransform.linear[0][1] + (s64)tmpTransform.translation.v32.y * tmpTransform.linear[1][1] + (s64)tmpTransform.translation.v32.z * tmpTransform.linear[2][1]));
+    transform->translation.v32.z = Q_6_10_TO_INT(-((s64)tmpTransform.translation.v32.x * tmpTransform.linear[0][2] + (s64)tmpTransform.translation.v32.y * tmpTransform.linear[1][2] + (s64)tmpTransform.translation.v32.z * tmpTransform.linear[2][2]));
+#else
+    // I presume this is a leftover from when Transform3D used Vec3_16 for it's translation?
+    // If not, though... then why the hell don't you use the 32-bit version too???
+    transform->translation.v16.x = Q_6_10_TO_INT(-((s64)tmpTransform.translation.v32.x * tmpTransform.linear[0][0] + (s64)tmpTransform.translation.v32.y * tmpTransform.linear[1][0] + (s64)tmpTransform.translation.v32.z * tmpTransform.linear[2][0]));
+    transform->translation.v16.y = Q_6_10_TO_INT(-((s64)tmpTransform.translation.v32.x * tmpTransform.linear[0][1] + (s64)tmpTransform.translation.v32.y * tmpTransform.linear[1][1] + (s64)tmpTransform.translation.v32.z * tmpTransform.linear[2][1]));
+    transform->translation.v16.z = Q_6_10_TO_INT(-((s64)tmpTransform.translation.v32.x * tmpTransform.linear[0][2] + (s64)tmpTransform.translation.v32.y * tmpTransform.linear[1][2] + (s64)tmpTransform.translation.v32.z * tmpTransform.linear[2][2]));
+#endif
+}
+
+UNUSED void Transform3D_InvertRigid(Transform3D *transform)
+{
+    s32 x, y;
+
+    Transform3D_Transpose(transform);
+
+    x = NEGATE(transform->translation.v32.x);
+    y = NEGATE(transform->translation.v32.y);
+        NEGATE(transform->translation.v32.z);
+
+    transform->translation.v32.x = Q_6_10_TO_INT((s64)x * transform->linear[0][0] + (s64)y * transform->linear[1][0] + (s64)transform->translation.v32.z * transform->linear[2][0]);
+    transform->translation.v32.y = Q_6_10_TO_INT((s64)x * transform->linear[0][1] + (s64)y * transform->linear[1][1] + (s64)transform->translation.v32.z * transform->linear[2][1]);
+    transform->translation.v32.z = Q_6_10_TO_INT((s64)x * transform->linear[0][2] + (s64)y * transform->linear[1][2] + (s64)transform->translation.v32.z * transform->linear[2][2]);
+}
+
+UNUSED void Transform3D_FromQuaternion(Transform3D *transform, Quaternion *quat)
+{
+    s32 x2 = quat->x * 2;
+    s32 y2 = quat->y * 2;
+    s32 z2 = quat->z * 2;
+
+    s16 x2W = Q_6_10_MUL(x2, quat->w);
+    s16 y2W = Q_6_10_MUL(y2, quat->w);
+    s16 z2W = Q_6_10_MUL(z2, quat->w);
+
+    s16 x = quat->x;
+    s16 x2X = Q_6_10_MUL(x2, x);
+    s16 y2X = Q_6_10_MUL(y2, x);
+    s16 z2X = Q_6_10_MUL(z2, x);
+
+    s16 y = quat->y;
+    s16 y2Y = Q_6_10_MUL(y2, y);
+    s16 z2Y = Q_6_10_MUL(z2, y);
+
+    s16 z = quat->z;
+    s16 z2Z = Q_6_10_MUL(z2, z);
+
+    transform->linear[0][0] = Q_6_10(1.0) - (y2Y + z2Z);
+    transform->linear[0][1] = y2X - z2W;
+    transform->linear[0][2] = z2X + y2W;
+
+    transform->linear[1][0] = y2X + z2W;
+    transform->linear[1][1] = Q_6_10(1.0) - (x2X + z2Z);
+    transform->linear[1][2] = z2Y - x2W;
+
+    transform->linear[2][0] = z2X - y2W;
+    transform->linear[2][1] = z2Y + x2W;
+    transform->linear[2][2] = Q_6_10(1.0) - (x2X + y2Y);
+
+    transform->translation.v32.x = transform->translation.v32.y = transform->translation.v32.z = 0;
+}
+
+UNUSED inline void TransformNode_Init(TransformNode *node)
+{
+    node->parent = NULL;
+    node->child = NULL;
+    node->next = NULL;
+    node->flags = TRANSFORM_NONE;
+}
+
+UNUSED inline TransformNode *TransformNode_GetRoot(TransformNode *node)
+{
+    for (; node->parent != NULL; node = node->parent);
+
+    return node;
+}
+
+inline void TransformNode_DetachFromParent(TransformNode *node)
+{
+    if (node->parent != NULL) {
+        bool8 removed = TransformNode_RemoveChild(node->parent, node);
+#if DEBUG
+        assert(removed);
 #endif
     }
-    curr->unk12 = 0x400;
-    curr->unkA = 0x400;
-    curr->unk2 = 0x400;
 }
 
-UNUSED void sub_8085CE4(UNK_8085D14 *p1, u32 p2, u32 p3, u32 p4)
+static inline bool8 TransformNode_RemoveChild(TransformNode *parent, TransformNode *child)
 {
-    u8 i;
-    UNK_8085D14 *curr = p1;
-    // memset
-    for (i = 0; i < 32; i += 4) {
-#ifndef NON_MATCHING
-        *((u32 *)curr)++ = 0;
-#else
-        u32 *p = (u32 *)curr;
-        *p = 0;
-        p++;
-        curr = (UNK_8085D14 *)p;
-#endif
-    }
-    curr->unk12 = 0x400;
-    curr->unkA = 0x400;
-    curr->unk2 = 0x400;
+    TransformNode *curChild, *prevChild;
 
-    p1->unk14 = p2;
-    p1->unk18 = p3;
-    p1->unk1C = p4;
-}
-
-UNUSED void sub_8085D14(UNK_8085D14 *p1, u32 p2, u32 p3, u32 p4)
-{
-    u8 i;
-    UNK_8085D14 *curr = p1;
-    // memset
-    for (i = 0; i < 32; i += 4) {
-#ifndef NON_MATCHING
-        *((u32 *)curr)++ = 0;
-#else
-        u32 *p = (u32 *)curr;
-        *p = 0;
-        p++;
-        curr = (UNK_8085D14 *)p;
-#endif
-    }
-    curr->unk12 = 0x400;
-    curr->unkA = 0x400;
-    curr->unk2 = 0x400;
-
-    p1->unk2 = p2;
-    p1->unkA = p3;
-    p1->unk12 = p4;
-}
-
-UNUSED void sub_8085D44(UNK_8085DEC *thing)
-{
-    thing->unk0 = NULL;
-    thing->start = NULL;
-    thing->next = NULL;
-    thing->unkC = NULL;
-}
-
-UNUSED UNK_8085DEC *sub_8085D50(UNK_8085DEC *thing)
-{
-    while (thing->unk0 != NULL) {
-        thing = thing->unk0;
-    }
-
-    return thing;
-}
-
-UNUSED void sub_8085D64(UNK_8085DEC *thing)
-{
-    if (thing->unk0 != NULL) {
-        sub_8085D98(thing->unk0, thing);
-    }
-}
-
-UNUSED void sub_8085D78(UNK_8085DEC *thing, UNK_8085DEC *target)
-{
-    if (target->unk0 != NULL) {
-        sub_8085D98(target->unk0, target);
-    }
-    target->unk0 = thing;
-    target->next = thing->start;
-    thing->start = target;
-}
-
-static bool8 sub_8085D98(UNK_8085DEC *thing, UNK_8085DEC *target)
-{
-    UNK_8085DEC *curr = thing->start;
-    UNK_8085DEC *prev = NULL;
-
-    while (curr != NULL) {
-        if (curr == target) {
-            if (prev == NULL) {
-                thing->start = curr->next;
+    for (curChild = parent->child, prevChild = NULL; curChild != NULL; prevChild = curChild, curChild = curChild->next) {
+        if (curChild == child) {
+            if (prevChild == NULL) {
+                parent->child = curChild->next;
             } else {
-                prev->next = curr->next;
+                prevChild->next = curChild->next;
             }
-            target->unk0 = NULL;
-            target->next = NULL;
+
+            child->parent = NULL;
+            child->next = NULL;
 
             return TRUE;
         }
-        prev = curr;
-        curr = curr->next;
     }
 
     return FALSE;
 }
 
-UNUSED u16 sub_8085DD0(UNK_8085DEC *thing)
+UNUSED inline void TransformNode_AddChild(TransformNode *parent, TransformNode *child)
 {
-    u16 num = 0;
-    thing = thing->start;
-    while (thing != NULL) {
-        num++;
-        thing = thing->next;
-    }
+    TransformNode_DetachFromParent(child);
 
-    return num;
+    child->parent = parent;
+    child->next = parent->child;
+    parent->child = child;
 }
 
-UNUSED UNK_8085DEC *sub_8085DEC(UNK_8085DEC *thing, u16 num)
+UNUSED inline u16 TransformNode_GetChildCount(TransformNode *node)
 {
-    thing = thing->start;
-    while (thing != NULL && num != 0) {
-        num--;
-        thing = thing->next;
-    }
+    u16 cnt;
+    for (cnt = 0, node = node->child; node != NULL; cnt++, node = node->next);
 
-    return thing;
+    return cnt;
 }
 
-UNUSED void sub_8085E10(struct UNK_8085F1C *p1, struct UNK_8085F1C *p2) { memcpy(p2, &p1->unk10, 0x10); }
-
-UNUSED void sub_8085E24(struct UNK_8085F1C *p1, struct UNK_8085F1C *p2) { memcpy(&p1->unk10, p2, 0x10); }
-
-UNUSED void sub_8085E38(struct UNK_8085F1C *p1, struct UNK_8085F1C *p2)
+UNUSED inline TransformNode *TransformNode_GetChildByIdx(TransformNode *node, u16 idx)
 {
-    memcpy(p2, &p1->unk10, 0x10);
+    for (node = node->child; node != NULL && idx != 0; idx--, node = node->next);
 
-    while (p1 = p1->unk0, p1 != NULL) {
-        // TODO: fix all these types
-        sub_80835E0((UNK_8085D14_2 *)p2, (UNK_8085D14_2 *)&p1->unk10);
+    return node;
+}
+
+inline void TransformNode_GetLocal2D(TransformNode *node, Transform2D *transform)
+{
+    memcpy(transform, &node->transform.transform2D, sizeof(Transform2D));
+}
+
+UNUSED inline void TransformNode_SetLocal2D(TransformNode *node, Transform2D *transform)
+{
+    memcpy(&node->transform.transform2D, transform, sizeof(Transform2D));
+}
+
+UNUSED inline void TransformNode_GetWorld2D(TransformNode *node, Transform2D *transform)
+{
+    TransformNode_GetLocal2D(node, transform);
+
+    while ((node = node->parent) != NULL) {
+        Transform2D_ApplyToLocal(transform, &node->transform.transform2D);
     }
 }
 
-UNUSED void sub_8085E64(struct UNK_8085F1C *p1)
+UNUSED inline void TransformNode_InitLocal3D(TransformNode *node)
 {
-    u8 i;
-    struct UNK_8085F1C_1 *curr;
-    p1->unk10 = 0;
+    node->transform.state3D.useTRS = FALSE;
 
-    // memset 0
-    curr = &p1->unk34;
-    for (i = 0; i < 0x20; i += 4) {
-#ifndef NON_MATCHING
-        *((u32 *)curr)++ = 0;
+    Transform3D_Init(&node->transform.state3D.local);
+    node->flags |= TRANSFORM_LOCAL_VALID;
+}
+
+UNUSED inline void TransformNode_InitTRS(TransformNode *node)
+{
+    node->transform.state3D.useTRS = TRUE;
+
+    node->transform.state3D.rotation.x = node->transform.state3D.rotation.y = node->transform.state3D.rotation.z = 0;
+    node->transform.state3D.translation.x = node->transform.state3D.translation.y = node->transform.state3D.translation.z = 0;
+    node->transform.state3D.scale.x = node->transform.state3D.scale.y = node->transform.state3D.scale.z = Q_6_10(1.0);
+}
+
+static Transform3D *TransformNode_GetLocal3D(TransformNode *node)
+{
+    if (!(node->flags & TRANSFORM_LOCAL_VALID)) {
+        if (node->transform.state3D.useTRS == TRUE) {
+            Transform3D_RotateXYZ(&node->transform.state3D.local, node->transform.state3D.rotation.x, node->transform.state3D.rotation.y, node->transform.state3D.rotation.z);
+
+            node->transform.state3D.local.linear[0][0] = Q_6_10_MUL(node->transform.state3D.scale.x, node->transform.state3D.local.linear[0][0]);
+            node->transform.state3D.local.linear[0][1] = Q_6_10_MUL(node->transform.state3D.scale.x, node->transform.state3D.local.linear[0][1]);
+            node->transform.state3D.local.linear[0][2] = Q_6_10_MUL(node->transform.state3D.scale.x, node->transform.state3D.local.linear[0][2]);
+
+            node->transform.state3D.local.linear[1][0] = Q_6_10_MUL(node->transform.state3D.scale.y, node->transform.state3D.local.linear[1][0]);
+            node->transform.state3D.local.linear[1][1] = Q_6_10_MUL(node->transform.state3D.scale.y, node->transform.state3D.local.linear[1][1]);
+            node->transform.state3D.local.linear[1][2] = Q_6_10_MUL(node->transform.state3D.scale.y, node->transform.state3D.local.linear[1][2]);
+
+            node->transform.state3D.local.linear[2][0] = Q_6_10_MUL(node->transform.state3D.scale.z, node->transform.state3D.local.linear[2][0]);
+            node->transform.state3D.local.linear[2][1] = Q_6_10_MUL(node->transform.state3D.scale.z, node->transform.state3D.local.linear[2][1]);
+            node->transform.state3D.local.linear[2][2] = Q_6_10_MUL(node->transform.state3D.scale.z, node->transform.state3D.local.linear[2][2]);
+        }
+
+        node->flags |= TRANSFORM_LOCAL_VALID;
+    }
+
+    return &node->transform.state3D.local;
+}
+
+UNUSED inline Transform3D *TransformNode_UpdateWorld3D(TransformNode *node)
+{
+    Transform3D *parent = NULL;
+
+    if (node->parent != NULL) {
+#ifdef BUGFIX
+        parent = TransformNode_UpdateWorld3D(node->parent);
 #else
-        u32 *p = (u32 *)curr;
-        *p = 0;
-        p++;
-        curr = (struct UNK_8085F1C_1 *)p;
+        // Infinite recursion, basically
+        // Besides, why are you calling your cousin instead of yourself???
+        parent = TransformNode_GetWorld3D(node);
 #endif
     }
 
-    curr->unk2[8] = 0x400;
-    curr->unk2[4] = 0x400;
-    curr->unk2[0] = 0x400;
-    p1->unkC |= 1;
-}
+    if ((node->flags & TRANSFORM_ALL) == TRANSFORM_ALL) {
+        if (parent != NULL) {
+            Transform3D_Apply(&node->transform.state3D.local, parent, &node->transform.state3D.world);
+        }
+    } else {
+        if (!(node->flags & TRANSFORM_LOCAL_VALID)) {
+            TransformNode_GetLocal3D(node);
 
-UNUSED void sub_8085E94(struct UNK_8085F1C *p1)
-{
-    p1->unk10 = 1;
-    p1->unk58 = 0;
-    p1->unk56 = 0;
-    p1->unk54 = 0;
-    p1->unk6C = 0;
-    p1->unk68 = 0;
-    p1->unk64 = 0;
-    p1->unk60 = 0x400;
-    p1->unk5E = 0x400;
-    p1->unk5C = 0x400;
-}
+            node->flags |= TRANSFORM_LOCAL_VALID;
+            node->flags &= ~TRANSFORM_WORLD_VALID;
+        }
 
-UNUSED struct UNK_8085F1C_1 *sub_8085EC4(struct UNK_8085F1C *p1)
-{
-    struct UNK_8085F1C_1 *sub = NULL;
-
-    if (p1->unk0 != NULL) {
-        sub = sub_8085EC4(p1);
+        Transform3D_Apply(&node->transform.state3D.local, parent, &node->transform.state3D.world);
     }
 
-    if ((p1->unkC & 3) == 3) {
-        if (sub == NULL) {
+    return &node->transform.state3D.world;
+}
+
+inline Transform3D *TransformNode_GetWorld3D(TransformNode *node)
+{
+    Transform3D *parent = NULL;
+
+    if (node->parent != NULL) {
+#ifdef BUGFIX
+        parent = TransformNode_GetWorld3D(node->parent);
+#else
+        // Read the comment at TransformNode_UpdateWorld3D
+        parent = TransformNode_GetWorld3D(node);
+#endif
+    }
+
+    if ((node->flags & TRANSFORM_ALL) == TRANSFORM_ALL) {
+        if (parent == NULL) {
             return NULL;
         }
-    } else {
-        if (!(p1->unkC & 1)) {
-            sub_80853F8(p1);
+    } else if (!(node->flags & TRANSFORM_LOCAL_VALID)) {
+        TransformNode_GetLocal3D(node);
 
-            p1->unkC |= 0x1;
-            p1->unkC &= ~0x2;
-        }
-    }
-    sub_8083B88(&p1->unk34, sub, &p1->unk14);
-    return &p1->unk14;
-}
-
-UNUSED struct UNK_8085F1C_1 *sub_8085F1C(struct UNK_8085F1C *p1)
-{
-    struct UNK_8085F1C_1 *sub = NULL;
-
-    if (p1->unk0 != NULL) {
-        sub = sub_8085EC4(p1);
+        node->flags |= TRANSFORM_LOCAL_VALID;
+        node->flags &= ~TRANSFORM_WORLD_VALID;
     }
 
-    if ((p1->unkC & 3) == 3) {
-        if (sub != NULL) {
-            sub_8083B88(&p1->unk34, sub, &p1->unk14);
-        }
-    } else {
-        if (!(p1->unkC & 1)) {
-            sub_80853F8(p1);
+    Transform3D_Apply(&node->transform.state3D.local, parent, &node->transform.state3D.world);
 
-            p1->unkC |= 0x1;
-            p1->unkC &= ~0x2;
-        }
-
-        sub_8083B88(&p1->unk34, sub, &p1->unk14);
-    }
-
-    return &p1->unk14;
+    return &node->transform.state3D.world;
 }
 
-UNUSED void sub_8085F84(void)
-{
-    // unused
-}
-#endif
+UNUSED inline void Math_DummyFunc(void) { }

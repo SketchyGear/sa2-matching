@@ -167,7 +167,7 @@ static u8 NoteSphere_BouncePlayer(Sprite_NoteSphere *note)
         vecNewPlayerDirY = ((vecNewPlayerDirY << 8) / r6) << 6;
         newAngle = ArcTan2(vecNewPlayerDirX, vecNewPlayerDirY) >> 8;
 
-        r4 = (u8)(newAngle + (sub_808558C(newAngle, angle, 8) << 1));
+        r4 = (u8)(newAngle + (AngleDiff(newAngle, angle, 8) << 1));
 
         gPlayer.qSpeedAirX = I(sNoteSphereVelocities[note->kind] * Q_2_14_TO_Q_24_8(COS(r4 * 4)));
         gPlayer.qSpeedAirY = I(sNoteSphereVelocities[note->kind] * Q_2_14_TO_Q_24_8(SIN(r4 * 4)));

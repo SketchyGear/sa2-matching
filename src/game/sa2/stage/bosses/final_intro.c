@@ -1406,9 +1406,9 @@ void sub_80393A4(void)
 
         for (i = 0; i < 32; i++) {
             if (intro->unk10[i] != 0) {
-                intro->birdPositions[i][0] = sub_8085698(intro->birdPositions[i][0], x, intro->animFrame, 10, gUnknown_080D7830[i][4] + 2);
+                intro->birdPositions[i][0] = LerpToStart(intro->birdPositions[i][0], x, intro->animFrame, 10, gUnknown_080D7830[i][4] + 2);
 
-                intro->birdPositions[i][1] = sub_8085698(intro->birdPositions[i][1], y, intro->animFrame, 10, gUnknown_080D7830[i][4] + 2);
+                intro->birdPositions[i][1] = LerpToStart(intro->birdPositions[i][1], y, intro->animFrame, 10, gUnknown_080D7830[i][4] + 2);
 
                 intro->birdSpeeds[i][0] -= (intro->birdSpeeds[i][0] >> 3);
                 intro->birdSpeeds[i][1] -= (intro->birdSpeeds[i][1] >> 3);
@@ -1420,8 +1420,8 @@ void sub_80393A4(void)
         }
         if (intro->unk1B0 > 0) {
             m4aSongNumStartOrContinue(SE_SUCTION);
-            intro->unk1B4 = sub_8085698(Q(100), x, intro->animFrame + 32, 10, 3);
-            intro->unk1B8 = sub_8085698(Q(180), y, intro->animFrame + 96, 10, 3);
+            intro->unk1B4 = LerpToStart(Q(100), x, intro->animFrame + 32, 10, 3);
+            intro->unk1B8 = LerpToStart(Q(180), y, intro->animFrame + 96, 10, 3);
 
             if ((intro->unk1B4 + 2048) > x) {
                 intro->unk1B0 = 0;

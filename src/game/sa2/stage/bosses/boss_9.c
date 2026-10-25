@@ -1907,8 +1907,8 @@ void sub_804F1EC(struct TA53_unk558 *unk558)
 
         SuperSonicGetPos(&qSonicX, &qSonicY);
 
-        qSonicX = sub_8085698(qSonicX, qX + Q(10), r7, 10, 2);
-        qSonicY = sub_8085698(qSonicY, qY, r7 + Q(1), 10, 2);
+        qSonicX = LerpToStart(qSonicX, qX + Q(10), r7, 10, 2);
+        qSonicY = LerpToStart(qSonicY, qY, r7 + Q(1), 10, 2);
 
         SuperSonicSetPos(qSonicX, qSonicY);
 
@@ -1942,9 +1942,9 @@ void sub_804F1EC(struct TA53_unk558 *unk558)
                         unkA8->unk6 = 1;
                         unkA8->unk1C = r7;
 
-                        unkA8->pos14.x = sub_8085698(unkA8->pos14.x, +Q(22) + qX, (r7), 10, 2);
+                        unkA8->pos14.x = LerpToStart(unkA8->pos14.x, +Q(22) + qX, (r7), 10, 2);
 
-                        unkA8->pos14.y = sub_8085698(unkA8->pos14.y, qY, (r7 + 160), 10, 2);
+                        unkA8->pos14.y = LerpToStart(unkA8->pos14.y, qY, (r7 + 160), 10, 2);
 
                         unkA8->unkE = Div(unkA8->unkE * 90, 100);
                         unkA8->unk10 = Div(unkA8->unk10 * 90, 100);

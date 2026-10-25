@@ -1698,9 +1698,9 @@ static void Task_LensFlareAnim(void)
             transform = &lensFlare->transforms[i];
 
             // Potentially a macro
-            transform->x = sub_8085654(lensFlare->posSequenceX[i], -0x14, lensFlare->animFrame * 16, 8, 0);
+            transform->x = LerpToEnd(lensFlare->posSequenceX[i], -0x14, lensFlare->animFrame * 16, 8, 0);
 
-            transform->y = sub_8085654(lensFlare->posSequenceY[i] + lensFlare->unk202 - gBgScrollRegs[1][1],
+            transform->y = LerpToEnd(lensFlare->posSequenceY[i] + lensFlare->unk202 - gBgScrollRegs[1][1],
                                        -0x14 + lensFlare->unk202 - gBgScrollRegs[1][1], lensFlare->animFrame * 16, 8, 0);
 
             TransformSprite(s, transform);

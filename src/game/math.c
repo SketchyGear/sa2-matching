@@ -6,8 +6,7 @@
 #include "game/math.h"
 
 static const u16 gCubicBSplineBasis[2] = {
-    Q_4_12(2.0 / 3.0),
-    Q_4_12(1.0 / 6.0)
+    Q_4_12(2.0 / 3.0), Q_4_12(1.0 / 6.0)
 };
 
 static u32 gRngPrevValue = 0;
@@ -55,8 +54,8 @@ inline u32 ApproxVecLen(s32 a, s32 b)
     a = ABS(a);
     b = ABS(b);
 
-    return (a <= b) ?
-            I((u64)b * Q(123.0 / 128.0) + (u64)a * Q(51.0 / 128.0)) :
+    return (a <= b)
+          ? I((u64)b * Q(123.0 / 128.0) + (u64)a * Q(51.0 / 128.0)) :
             I((u64)a * Q(123.0 / 128.0) + (u64)b * Q(51.0 / 128.0));
 }
 
@@ -70,10 +69,7 @@ inline s16 AngleDiff(u16 angleA, u16 angleB, u8 n)
     return (angleB <= range / 2) ? angleB : angleB - range;
 }
 
-inline u32 Lerp(s32 start, s32 end, s32 t, u8 n)
-{
-    return start - ((s64)t * (end - start) >> n);
-}
+inline u32 Lerp(s32 start, s32 end, s32 t, u8 n) { return start - ((s64)t * (end - start) >> n); }
 
 UNUSED inline u16 LerpAngle(u16 angleStart, u16 angleEnd, u8 n1, s16 t, u8 n2)
 {
@@ -100,35 +96,17 @@ inline s32 LerpToStart(s32 start, s32 end, s32 t, u8 n, u8 cnt)
     return end;
 }
 
-UNUSED inline s32 WeightedLeft(s32 prev, s32 cur, s32 next)
-{
-    return (prev * 7 + cur * 6 - next) / 12;
-}
+UNUSED inline s32 WeightedLeft(s32 prev, s32 cur, s32 next) { return (prev * 7 + cur * 6 - next) / 12; }
 
-UNUSED inline s32 WeightedRight(s32 prev, s32 cur, s32 next)
-{
-    return (-prev + cur * 6 + next * 7) / 12;
-}
+UNUSED inline s32 WeightedRight(s32 prev, s32 cur, s32 next) { return (-prev + cur * 6 + next * 7) / 12; }
 
-UNUSED inline s32 WeightedLeft2(s32 prev, s32 cur, s32 next)
-{
-    return (prev + cur * 8 - next) >> 3;
-}
+UNUSED inline s32 WeightedLeft2(s32 prev, s32 cur, s32 next) { return (prev + cur * 8 - next) >> 3; }
 
-UNUSED inline s32 WeightedRight2(s32 prev, s32 cur, s32 next)
-{
-    return (-prev + cur * 8 + next) >> 3;
-}
+UNUSED inline s32 WeightedRight2(s32 prev, s32 cur, s32 next) { return (-prev + cur * 8 + next) >> 3; }
 
-inline s32 DeltaScaled(s32 start, s32 end, s32 t, UNUSED s32 adjust, UNUSED s32 offset, u8 n)
-{
-    return (s64)(end - start) * (BitValue(n) - t) >> n;
-}
+inline s32 DeltaScaled(s32 start, s32 end, s32 t, UNUSED s32 adjust, UNUSED s32 offset, u8 n) { return (s64)(end - start) * (BitValue(n) - t) >> n; }
 
-inline s32 Delta(s32 start, s32 end)
-{
-    return end - start;
-}
+inline s32 Delta(s32 start, s32 end) { return end - start; }
 
 inline s32 CurveOffsetScaled(s32 prev, s32 cur, s32 next, s32 t, UNUSED s32 adjust, UNUSED s32 offset, u8 n)
 {
@@ -146,15 +124,9 @@ inline s32 CurveOffset(s32 prev, s32 cur, s32 next)
     return delta + (delta >> 1) - (cur >> 1);
 }
 
-UNUSED inline s32 CurveOffsetScaled2(s32 prev, s32 cur, s32 next, s32 t, s32 adjust, s32 offset, u8 n)
-{
-    return CurveOffsetScaled(prev, cur, next, t, adjust, offset, n);
-}
+UNUSED inline s32 CurveOffsetScaled2(s32 prev, s32 cur, s32 next, s32 t, s32 adjust, s32 offset, u8 n) { return CurveOffsetScaled(prev, cur, next, t, adjust, offset, n); }
 
-UNUSED inline s32 CurveOffset2(s32 prev, s32 cur, s32 next)
-{
-    return CurveOffset(prev, cur, next);
-}
+UNUSED inline s32 CurveOffset2(s32 prev, s32 cur, s32 next) { return CurveOffset(prev, cur, next); }
 
 UNUSED inline s32 DeltaCurveOffsetScaled(s32 prev, s32 cur, s32 next, s32 t, s32 adjust, s32 offset, u8 n)
 {
@@ -412,10 +384,7 @@ inline void Vec3_Normalize(Vec3_16 *v, u8 n)
     v->z = scale * v->z >> n;
 }
 
-UNUSED inline s32 Vec3_Dot(Vec3_16 *u, Vec3_16 *v, u8 n)
-{
-    return (u->x * v->x + u->y * v->y + u->z * v->z) >> n;
-}
+UNUSED inline s32 Vec3_Dot(Vec3_16 *u, Vec3_16 *v, u8 n) { return (u->x * v->x + u->y * v->y + u->z * v->z) >> n; }
 
 inline void Vec3_Cross(Vec3_16 *u, Vec3_16 *v, Vec3_16 *out, u8 n)
 {
@@ -1014,15 +983,9 @@ UNUSED inline TransformNode *TransformNode_GetChildByIdx(TransformNode *node, u1
     return node;
 }
 
-inline void TransformNode_GetLocal2D(TransformNode *node, Transform2D *transform)
-{
-    memcpy(transform, &node->transform.transform2D, sizeof(Transform2D));
-}
+inline void TransformNode_GetLocal2D(TransformNode *node, Transform2D *transform) { memcpy(transform, &node->transform.transform2D, sizeof(Transform2D)); }
 
-UNUSED inline void TransformNode_SetLocal2D(TransformNode *node, Transform2D *transform)
-{
-    memcpy(&node->transform.transform2D, transform, sizeof(Transform2D));
-}
+UNUSED inline void TransformNode_SetLocal2D(TransformNode *node, Transform2D *transform) { memcpy(&node->transform.transform2D, transform, sizeof(Transform2D)); }
 
 UNUSED inline void TransformNode_GetWorld2D(TransformNode *node, Transform2D *transform)
 {

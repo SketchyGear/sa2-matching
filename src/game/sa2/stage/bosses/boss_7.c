@@ -897,12 +897,12 @@ NONMATCH("asm/non_matching/game/sa2/stage/bosses/boss_7__sub_8048C7C.inc", bool8
         p1 = &unk28[i * 4];
         p2 = unk5C;
         sp4[0] = r2;
-        r0 = sub_80859F4(p1, p2);
+        r0 = CubicBSpline(p1, p2);
         r2 = sp4[0];
         *r2 = r0;
         r2++;
 #else
-        *r2++ = sub_80859F4(&unk28[i * 4], unk5C);
+        *r2++ = CubicBSpline(&unk28[i * 4], unk5C);
 #endif
     }
 

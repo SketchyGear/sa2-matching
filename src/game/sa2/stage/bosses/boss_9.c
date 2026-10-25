@@ -1207,7 +1207,7 @@ void sub_804E078(struct TA53_unk48 *unk48)
     unk48->qPos44.y = 0;
 
     if (unk48->unk38 != 0) {
-        if (sub_808558C(unk48->unk38, 0, 10) < 0) {
+        if (AngleDiff(unk48->unk38, 0, 10) < 0) {
             unk48->unk38--;
         } else {
             unk48->unk38++;
@@ -1329,7 +1329,7 @@ void sub_804E15C(struct TA53_unk48 *unk48)
             r6 = sub_8004418(I(qSonicY - r8), I(qSonicX - sb));
             p0 = r5;
             p0 += unk48->unk38;
-            if (sub_808558C(p0 & ONE_CYCLE, r6, 10) < 0) {
+            if (AngleDiff(p0 & ONE_CYCLE, r6, 10) < 0) {
                 if (unk48->unk38 > 512) {
                     if (unk48->unk38 > 0x380)
                         unk48->unk38 -= 4;
@@ -1587,7 +1587,7 @@ void sub_804E974(struct TA53_unkA8 *unkA8)
     if (unkA8->unk5 > 0) {
         --unkA8->unk5;
     } else {
-        if (sub_808558C(unkA8->unkA, sinVal, 10) < 0) {
+        if (AngleDiff(unkA8->unkA, sinVal, 10) < 0) {
             unkA8->unkA -= 5;
         } else {
             unkA8->unkA += 5;

@@ -5,9 +5,7 @@
 #include "trig.h"
 #include "game/math.h"
 
-static const u16 gCubicBSplineBasis[2] = {
-    Q_4_12(2.0 / 3.0), Q_4_12(1.0 / 6.0)
-};
+static const u16 gCubicBSplineBasis[2] = { Q_4_12(2.0 / 3.0), Q_4_12(1.0 / 6.0) };
 
 static u32 gRngPrevValue = 0;
 static u32 gRngValue = 0;
@@ -54,9 +52,7 @@ inline u32 ApproxVecLen(s32 a, s32 b)
     a = ABS(a);
     b = ABS(b);
 
-    return (a <= b)
-          ? I((u64)b * Q(123.0 / 128.0) + (u64)a * Q(51.0 / 128.0)) :
-            I((u64)a * Q(123.0 / 128.0) + (u64)b * Q(51.0 / 128.0));
+    return (a <= b) ? I((u64)b * Q(123.0 / 128.0) + (u64)a * Q(51.0 / 128.0)) : I((u64)a * Q(123.0 / 128.0) + (u64)b * Q(51.0 / 128.0));
 }
 
 inline s16 AngleDiff(u16 angleA, u16 angleB, u8 n)
@@ -124,9 +120,15 @@ inline s32 CurveOffset(s32 prev, s32 cur, s32 next)
     return delta + (delta >> 1) - (cur >> 1);
 }
 
-UNUSED inline s32 CurveOffsetScaled2(s32 prev, s32 cur, s32 next, s32 t, s32 adjust, s32 offset, u8 n) { return CurveOffsetScaled(prev, cur, next, t, adjust, offset, n); }
+UNUSED inline s32 CurveOffsetScaled2(s32 prev, s32 cur, s32 next, s32 t, s32 adjust, s32 offset, u8 n)
+{
+    return CurveOffsetScaled(prev, cur, next, t, adjust, offset, n);
+}
 
-UNUSED inline s32 CurveOffset2(s32 prev, s32 cur, s32 next) { return CurveOffset(prev, cur, next); }
+UNUSED inline s32 CurveOffset2(s32 prev, s32 cur, s32 next)
+{
+    return CurveOffset(prev, cur, next);
+}
 
 UNUSED inline s32 DeltaCurveOffsetScaled(s32 prev, s32 cur, s32 next, s32 t, s32 adjust, s32 offset, u8 n)
 {
@@ -234,10 +236,7 @@ UNUSED s32 BezierCubicInterpolate(s32 p0, s32 p1, s32 p2, s32 p3, s32 t, u8 n)
     s32 invT2 = SQUARE(invT) >> n;
     s32 invT3 = invT2 * invT >> n;
 
-    return ((s64)invT3 * p0 +
-            ((s64)invT2 * t >> n) * p1 * 3 +
-            (invT * t2 >> n) * p2 * 3 +
-            (s64)t3 * p3) >> n;
+    return ((s64)invT3 * p0 + ((s64)invT2 * t >> n) * p1 * 3 + (invT * t2 >> n) * p2 * 3 + (s64)t3 * p3) >> n;
 }
 
 UNUSED s32 HermiteCubicInterpolate(s32 p0, s32 m0, s32 m1, s32 p1, s32 t, u8 n)
@@ -245,10 +244,7 @@ UNUSED s32 HermiteCubicInterpolate(s32 p0, s32 m0, s32 m1, s32 p1, s32 t, u8 n)
     s32 t2 = SQUARE((s64)t) >> n;
     s32 t3 = (s64)t2 * t >> n;
 
-    return ((s64)p0 * ((t3 - t2) * 2 - t2 + BitValue(n)) +
-            (s64)m0 * (-t2 + t3 - t2 + t) +
-            (s64)p1 * (t2 * 3 - t3 - t3) +
-            (s64)m1 * (-t2 + t3)) >> n;
+    return ((s64)p0 * ((t3 - t2) * 2 - t2 + BitValue(n)) + (s64)m0 * (-t2 + t3 - t2 + t) + (s64)p1 * (t2 * 3 - t3 - t3) + (s64)m1 * (-t2 + t3)) >> n;
 }
 
 UNUSED inline void Transform2D_Init(Transform2D *transform)
@@ -361,10 +357,7 @@ UNUSED void Transform2D_Invert(Transform2D *transform)
 
     transform->rotation = CLAMP_SIN_PERIOD(SIN_PERIOD - transform->rotation);
     if (transform->rotation) {
-        Vec2_32 translation = {
-            Q_MUL(-transform->translation.x, COS_24_8(transform->rotation)) - Q_MUL(-transform->translation.y, SIN_24_8(transform->rotation)),
-            Q_MUL(-transform->translation.x, SIN_24_8(transform->rotation)) + Q_MUL(-transform->translation.y, COS_24_8(transform->rotation)),
-        };
+        Vec2_32 translation = { Q_MUL(-transform->translation.x, COS_24_8(transform->rotation)) - Q_MUL(-transform->translation.y, SIN_24_8(transform->rotation)), Q_MUL(-transform->translation.x, SIN_24_8(transform->rotation)) + Q_MUL(-transform->translation.y, COS_24_8(transform->rotation)) };
 
         transform->translation.y = translation.y;
         transform->translation.x = translation.x;
@@ -473,7 +466,7 @@ UNUSED inline void Quaternion_RotateX(Quaternion *quat, u16 angle)
 
 UNUSED inline void Quaternion_RotateY(Quaternion *quat, u16 angle)
 {
-    s16 angleSin; 
+    s16 angleSin;
 
     HALVE(angle);
     angleSin = Q_2_14_TO_Q_6_10(SIN(angle));
@@ -486,7 +479,7 @@ UNUSED inline void Quaternion_RotateY(Quaternion *quat, u16 angle)
 
 UNUSED inline void Quaternion_RotateZ(Quaternion *quat, u16 angle)
 {
-    s16 angleSin; 
+    s16 angleSin;
 
     HALVE(angle);
     angleSin = Q_2_14_TO_Q_6_10(SIN(angle));
@@ -983,9 +976,15 @@ UNUSED inline TransformNode *TransformNode_GetChildByIdx(TransformNode *node, u1
     return node;
 }
 
-inline void TransformNode_GetLocal2D(TransformNode *node, Transform2D *transform) { memcpy(transform, &node->transform.transform2D, sizeof(Transform2D)); }
+inline void TransformNode_GetLocal2D(TransformNode *node, Transform2D *transform)
+{
+    memcpy(transform, &node->transform.transform2D, sizeof(Transform2D));
+}
 
-UNUSED inline void TransformNode_SetLocal2D(TransformNode *node, Transform2D *transform) { memcpy(&node->transform.transform2D, transform, sizeof(Transform2D)); }
+UNUSED inline void TransformNode_SetLocal2D(TransformNode *node, Transform2D *transform)
+{
+    memcpy(&node->transform.transform2D, transform, sizeof(Transform2D));
+}
 
 UNUSED inline void TransformNode_GetWorld2D(TransformNode *node, Transform2D *transform)
 {

@@ -292,7 +292,7 @@ void sub_807CC28(Sprite_IA86 *ia086)
     s32 unk10 = ia086->unk228.quarterWidth;
     s32 r4 = ia086->unk228.width;
     s32 divRes = -ia086->unk18C / ia086->unk228.height;
-    s16 procRes = sub_80855C0(unk10, r4, divRes, 8) >> 1;
+    s16 procRes = Lerp(unk10, r4, divRes, 8) >> 1;
 
     s32 *target = &ia086->unk190;
 
@@ -427,7 +427,7 @@ void sub_807CCBC(Sprite_IA86 *ia086)
                 temp2 = -unk086->unkC;
                 divRes = temp2 / ia086->unk228.height;
 
-                divRes2 = sub_80855C0(r5, r4, divRes, 8) >> 1;
+                divRes2 = Lerp(r5, r4, divRes, 8) >> 1;
                 unk086->unk10 = divRes2 * SIN_24_8(unk086->unk4 * 4);
                 unk086->unk4 += 8;
             } else {
@@ -503,7 +503,7 @@ bool32 sub_807CFB4(Sprite_IA86 *ia086)
             r5 = ia086->unk228.quarterWidth;
             r4 = ia086->unk228.width;
 
-            r3 = sub_80855C0(r5, r4, (Q(y - py) / ia086->unk228.height), 8);
+            r3 = Lerp(r5, r4, (Q(y - py) / ia086->unk228.height), 8);
 
             tempX = (x - (r3 >> 1));
             if ((tempX <= px) && ((tempX + r3) >= px)) {

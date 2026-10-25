@@ -187,7 +187,7 @@ static void HandleMovement(Sprite_Cannon *cannon)
 
     r3 = (!cannon->facingRight) ? ((cannon->unk6E == 0) ? DEG_TO_SIN(225) : DEG_TO_SIN(135))
                                 : ((cannon->unk6E == 0) ? DEG_TO_SIN(45) : DEG_TO_SIN(315));
-    temp2 = sub_808558C(cannon->cannonAngle, r3, 10);
+    temp2 = AngleDiff(cannon->cannonAngle, r3, 10);
     temp3 = temp2;
 
     if (abs(temp2) >= 5) {
@@ -371,7 +371,7 @@ static bool16 HandleResetMovement(Sprite_Cannon *cannon)
     s16 temp2, temp3;
 
     r3 = cannon->facingRight == 0 ? DEG_TO_SIN(180) : DEG_TO_SIN(0);
-    temp2 = sub_808558C(cannon->cannonAngle, r3, 10);
+    temp2 = AngleDiff(cannon->cannonAngle, r3, 10);
     temp3 = temp2;
 
     if (abs(temp2) >= 5) {

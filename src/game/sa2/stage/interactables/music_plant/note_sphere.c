@@ -145,7 +145,7 @@ static u8 NoteSphere_BouncePlayer(Sprite_NoteSphere *note)
     vecPlayerToNoteX = I(gPlayer.qWorldX) - note->posX;
     vecPlayerToNoteY = I(gPlayer.qWorldY) - note->posY;
 
-    r6 = sub_8085530(vecPlayerToNoteX, vecPlayerToNoteY);
+    r6 = ApproxVecLen(vecPlayerToNoteX, vecPlayerToNoteY);
 
     // Normalize vector
     vecPlayerToNoteX = (vecPlayerToNoteX << 14) / r6;
@@ -161,7 +161,7 @@ static u8 NoteSphere_BouncePlayer(Sprite_NoteSphere *note)
         u8 r4;
         s16 vecNewPlayerDirX = -gPlayer.qSpeedAirX;
         s16 vecNewPlayerDirY = -gPlayer.qSpeedAirY;
-        r6 = sub_8085530((s16)vecNewPlayerDirX, (s16)vecNewPlayerDirY);
+        r6 = ApproxVecLen((s16)vecNewPlayerDirX, (s16)vecNewPlayerDirY);
 
         vecNewPlayerDirX = ((vecNewPlayerDirX << 8) / r6) << 6;
         vecNewPlayerDirY = ((vecNewPlayerDirY << 8) / r6) << 6;

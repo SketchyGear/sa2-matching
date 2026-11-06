@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches: [main, workflow-testing]
   pull_request:
   pull_request_target:
 

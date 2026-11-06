@@ -165,7 +165,7 @@ static void BirdAnimEnd(void);
 
 #define FadeOutBlend(frame) BLDALPHA_BLEND(16 - (frame), frame)
 
-#define FRAME_TIME_SECONDS(n) ((n) * 60)
+#define FRAME_TIME_SECONDS(n) ((n)*60)
 
 #define TRANSITION_OUT 0
 #define TRANSITION_IN  1

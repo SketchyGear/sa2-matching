@@ -100,7 +100,10 @@ UNUSED inline s32 WeightedLeft2(s32 prev, s32 cur, s32 next) { return (prev + cu
 
 UNUSED inline s32 WeightedRight2(s32 prev, s32 cur, s32 next) { return (-prev + cur * 8 + next) >> 3; }
 
-inline s32 DeltaScaled(s32 start, s32 end, s32 t, UNUSED s32 adjust, UNUSED s32 offset, u8 n) { return (s64)(end - start) * (BitValue(n) - t) >> n; }
+inline s32 DeltaScaled(s32 start, s32 end, s32 t, UNUSED s32 adjust, UNUSED s32 offset, u8 n)
+{
+    return (s64)(end - start) * (BitValue(n) - t) >> n;
+}
 
 inline s32 Delta(s32 start, s32 end) { return end - start; }
 
@@ -125,10 +128,7 @@ UNUSED inline s32 CurveOffsetScaled2(s32 prev, s32 cur, s32 next, s32 t, s32 adj
     return CurveOffsetScaled(prev, cur, next, t, adjust, offset, n);
 }
 
-UNUSED inline s32 CurveOffset2(s32 prev, s32 cur, s32 next)
-{
-    return CurveOffset(prev, cur, next);
-}
+UNUSED inline s32 CurveOffset2(s32 prev, s32 cur, s32 next) { return CurveOffset(prev, cur, next); }
 
 UNUSED inline s32 DeltaCurveOffsetScaled(s32 prev, s32 cur, s32 next, s32 t, s32 adjust, s32 offset, u8 n)
 {
@@ -244,7 +244,9 @@ UNUSED s32 HermiteCubicInterpolate(s32 p0, s32 m0, s32 m1, s32 p1, s32 t, u8 n)
     s32 t2 = SQUARE((s64)t) >> n;
     s32 t3 = (s64)t2 * t >> n;
 
-    return ((s64)p0 * ((t3 - t2) * 2 - t2 + BitValue(n)) + (s64)m0 * (-t2 + t3 - t2 + t) + (s64)p1 * (t2 * 3 - t3 - t3) + (s64)m1 * (-t2 + t3)) >> n;
+    return ((s64)p0 * ((t3 - t2) * 2 - t2 + BitValue(n)) + (s64)m0 * (-t2 + t3 - t2 + t) + (s64)p1 * (t2 * 3 - t3 - t3)
+            + (s64)m1 * (-t2 + t3))
+        >> n;
 }
 
 UNUSED inline void Transform2D_Init(Transform2D *transform)
@@ -357,7 +359,12 @@ UNUSED void Transform2D_Invert(Transform2D *transform)
 
     transform->rotation = CLAMP_SIN_PERIOD(SIN_PERIOD - transform->rotation);
     if (transform->rotation) {
-        Vec2_32 translation = { Q_MUL(-transform->translation.x, COS_24_8(transform->rotation)) - Q_MUL(-transform->translation.y, SIN_24_8(transform->rotation)), Q_MUL(-transform->translation.x, SIN_24_8(transform->rotation)) + Q_MUL(-transform->translation.y, COS_24_8(transform->rotation)) };
+        Vec2_32 translation = {
+            Q_MUL(-transform->translation.x, COS_24_8(transform->rotation))
+                - Q_MUL(-transform->translation.y, SIN_24_8(transform->rotation)),
+            Q_MUL(-transform->translation.x, SIN_24_8(transform->rotation))
+                + Q_MUL(-transform->translation.y, COS_24_8(transform->rotation)),
+        };
 
         transform->translation.y = translation.y;
         transform->translation.x = translation.x;
@@ -545,21 +552,36 @@ UNUSED inline void Transform3D_InitIdentity(Transform3D *transform, s32 m00, s32
 
 static void Transform3D_Apply(Transform3D *local, Transform3D *parent, Transform3D *out)
 {
-    out->linear[0][0] = Q_6_10_TO_INT(local->linear[0][0] * parent->linear[0][0] + local->linear[0][1] * parent->linear[1][0] + local->linear[0][2] * parent->linear[2][0]);
-    out->linear[0][1] = Q_6_10_TO_INT(local->linear[0][0] * parent->linear[0][1] + local->linear[0][1] * parent->linear[1][1] + local->linear[0][2] * parent->linear[2][1]);
-    out->linear[0][2] = Q_6_10_TO_INT(local->linear[0][0] * parent->linear[0][2] + local->linear[0][1] * parent->linear[1][2] + local->linear[0][2] * parent->linear[2][2]);
+    out->linear[0][0] = Q_6_10_TO_INT(local->linear[0][0] * parent->linear[0][0] + local->linear[0][1] * parent->linear[1][0]
+                                      + local->linear[0][2] * parent->linear[2][0]);
+    out->linear[0][1] = Q_6_10_TO_INT(local->linear[0][0] * parent->linear[0][1] + local->linear[0][1] * parent->linear[1][1]
+                                      + local->linear[0][2] * parent->linear[2][1]);
+    out->linear[0][2] = Q_6_10_TO_INT(local->linear[0][0] * parent->linear[0][2] + local->linear[0][1] * parent->linear[1][2]
+                                      + local->linear[0][2] * parent->linear[2][2]);
 
-    out->linear[1][0] = Q_6_10_TO_INT(local->linear[1][0] * parent->linear[0][0] + local->linear[1][1] * parent->linear[1][0] + local->linear[1][2] * parent->linear[2][0]);
-    out->linear[1][1] = Q_6_10_TO_INT(local->linear[1][0] * parent->linear[0][1] + local->linear[1][1] * parent->linear[1][1] + local->linear[1][2] * parent->linear[2][1]);
-    out->linear[1][2] = Q_6_10_TO_INT(local->linear[1][0] * parent->linear[0][2] + local->linear[1][1] * parent->linear[1][2] + local->linear[1][2] * parent->linear[2][2]);
+    out->linear[1][0] = Q_6_10_TO_INT(local->linear[1][0] * parent->linear[0][0] + local->linear[1][1] * parent->linear[1][0]
+                                      + local->linear[1][2] * parent->linear[2][0]);
+    out->linear[1][1] = Q_6_10_TO_INT(local->linear[1][0] * parent->linear[0][1] + local->linear[1][1] * parent->linear[1][1]
+                                      + local->linear[1][2] * parent->linear[2][1]);
+    out->linear[1][2] = Q_6_10_TO_INT(local->linear[1][0] * parent->linear[0][2] + local->linear[1][1] * parent->linear[1][2]
+                                      + local->linear[1][2] * parent->linear[2][2]);
 
-    out->linear[2][0] = Q_6_10_TO_INT(local->linear[2][0] * parent->linear[0][0] + local->linear[2][1] * parent->linear[1][0] + local->linear[2][2] * parent->linear[2][0]);
-    out->linear[2][1] = Q_6_10_TO_INT(local->linear[2][0] * parent->linear[0][1] + local->linear[2][1] * parent->linear[1][1] + local->linear[2][2] * parent->linear[2][1]);
-    out->linear[2][2] = Q_6_10_TO_INT(local->linear[2][0] * parent->linear[0][2] + local->linear[2][1] * parent->linear[1][2] + local->linear[2][2] * parent->linear[2][2]);
+    out->linear[2][0] = Q_6_10_TO_INT(local->linear[2][0] * parent->linear[0][0] + local->linear[2][1] * parent->linear[1][0]
+                                      + local->linear[2][2] * parent->linear[2][0]);
+    out->linear[2][1] = Q_6_10_TO_INT(local->linear[2][0] * parent->linear[0][1] + local->linear[2][1] * parent->linear[1][1]
+                                      + local->linear[2][2] * parent->linear[2][1]);
+    out->linear[2][2] = Q_6_10_TO_INT(local->linear[2][0] * parent->linear[0][2] + local->linear[2][1] * parent->linear[1][2]
+                                      + local->linear[2][2] * parent->linear[2][2]);
 
-    out->translation.v32.x = Q_6_10_TO_INT((s64)local->translation.v32.x * parent->linear[0][0] + (s64)local->translation.v32.y * parent->linear[1][0] + (s64)local->translation.v32.z * parent->linear[2][0] + parent->translation.v32.x);
-    out->translation.v32.y = Q_6_10_TO_INT((s64)local->translation.v32.x * parent->linear[0][1] + (s64)local->translation.v32.y * parent->linear[1][1] + (s64)local->translation.v32.z * parent->linear[2][1] + parent->translation.v32.y);
-    out->translation.v32.z = Q_6_10_TO_INT((s64)local->translation.v32.x * parent->linear[0][2] + (s64)local->translation.v32.y * parent->linear[1][2] + (s64)local->translation.v32.z * parent->linear[2][2] + parent->translation.v32.z);
+    out->translation.v32.x
+        = Q_6_10_TO_INT((s64)local->translation.v32.x * parent->linear[0][0] + (s64)local->translation.v32.y * parent->linear[1][0]
+                        + (s64)local->translation.v32.z * parent->linear[2][0] + parent->translation.v32.x);
+    out->translation.v32.y
+        = Q_6_10_TO_INT((s64)local->translation.v32.x * parent->linear[0][1] + (s64)local->translation.v32.y * parent->linear[1][1]
+                        + (s64)local->translation.v32.z * parent->linear[2][1] + parent->translation.v32.y);
+    out->translation.v32.z
+        = Q_6_10_TO_INT((s64)local->translation.v32.x * parent->linear[0][2] + (s64)local->translation.v32.y * parent->linear[1][2]
+                        + (s64)local->translation.v32.z * parent->linear[2][2] + parent->translation.v32.z);
 }
 
 UNUSED void Transform3D_ApplyToLocal(Transform3D *local, Transform3D *parent)
@@ -590,18 +612,27 @@ UNUSED void Transform3D_ApplyToLocal(Transform3D *local, Transform3D *parent)
     x = local->translation.v32.x;
     y = local->translation.v32.y;
     z = local->translation.v32.z;
-    local->translation.v32.x = Q_6_10_TO_INT((s64)x * parent->linear[0][0] + (s64)y * parent->linear[1][0] + (s64)z * parent->linear[2][0] + parent->translation.v32.x);
-    local->translation.v32.y = Q_6_10_TO_INT((s64)x * parent->linear[0][1] + (s64)y * parent->linear[1][1] + (s64)z * parent->linear[2][1] + parent->translation.v32.y);
-    local->translation.v32.z = Q_6_10_TO_INT((s64)x * parent->linear[0][2] + (s64)y * parent->linear[1][2] + (s64)z * parent->linear[2][2] + parent->translation.v32.z);
+    local->translation.v32.x = Q_6_10_TO_INT((s64)x * parent->linear[0][0] + (s64)y * parent->linear[1][0] + (s64)z * parent->linear[2][0]
+                                             + parent->translation.v32.x);
+    local->translation.v32.y = Q_6_10_TO_INT((s64)x * parent->linear[0][1] + (s64)y * parent->linear[1][1] + (s64)z * parent->linear[2][1]
+                                             + parent->translation.v32.y);
+    local->translation.v32.z = Q_6_10_TO_INT((s64)x * parent->linear[0][2] + (s64)y * parent->linear[1][2] + (s64)z * parent->linear[2][2]
+                                             + parent->translation.v32.z);
 }
 
 UNUSED void Transform3D_ApplyToParent(Transform3D *local, Transform3D *parent)
 {
     s32 x, y, z;
 
-    parent->translation.v32.x = Q_6_10_TO_INT((s64)local->translation.v32.x * parent->linear[0][0] + (s64)local->translation.v32.y * parent->linear[1][0] + (s64)local->translation.v32.z * parent->linear[2][0] + parent->translation.v32.x);
-    parent->translation.v32.y = Q_6_10_TO_INT((s64)local->translation.v32.x * parent->linear[0][1] + (s64)local->translation.v32.y * parent->linear[1][1] + (s64)local->translation.v32.z * parent->linear[2][1] + parent->translation.v32.y);
-    parent->translation.v32.z = Q_6_10_TO_INT((s64)local->translation.v32.x * parent->linear[0][2] + (s64)local->translation.v32.y * parent->linear[1][2] + (s64)local->translation.v32.z * parent->linear[2][2] + parent->translation.v32.z);
+    parent->translation.v32.x
+        = Q_6_10_TO_INT((s64)local->translation.v32.x * parent->linear[0][0] + (s64)local->translation.v32.y * parent->linear[1][0]
+                        + (s64)local->translation.v32.z * parent->linear[2][0] + parent->translation.v32.x);
+    parent->translation.v32.y
+        = Q_6_10_TO_INT((s64)local->translation.v32.x * parent->linear[0][1] + (s64)local->translation.v32.y * parent->linear[1][1]
+                        + (s64)local->translation.v32.z * parent->linear[2][1] + parent->translation.v32.y);
+    parent->translation.v32.z
+        = Q_6_10_TO_INT((s64)local->translation.v32.x * parent->linear[0][2] + (s64)local->translation.v32.y * parent->linear[1][2]
+                        + (s64)local->translation.v32.z * parent->linear[2][2] + parent->translation.v32.z);
 
     x = parent->linear[0][0];
     y = parent->linear[1][0];
@@ -627,9 +658,12 @@ UNUSED void Transform3D_ApplyToParent(Transform3D *local, Transform3D *parent)
 
 UNUSED void Transform3D_PointTransform(Vec3_32 *v, Transform3D *transform, Vec3_32 *out)
 {
-    out->x = Q_6_10_TO_INT((s64)v->x * transform->linear[0][0] + (s64)v->y * transform->linear[1][0] + (s64)v->z * transform->linear[2][0] + transform->translation.v32.x);
-    out->y = Q_6_10_TO_INT((s64)v->x * transform->linear[0][1] + (s64)v->y * transform->linear[1][1] + (s64)v->z * transform->linear[2][1] + transform->translation.v32.y);
-    out->z = Q_6_10_TO_INT((s64)v->x * transform->linear[0][2] + (s64)v->y * transform->linear[1][2] + (s64)v->z * transform->linear[2][2] + transform->translation.v32.z);
+    out->x = Q_6_10_TO_INT((s64)v->x * transform->linear[0][0] + (s64)v->y * transform->linear[1][0] + (s64)v->z * transform->linear[2][0]
+                           + transform->translation.v32.x);
+    out->y = Q_6_10_TO_INT((s64)v->x * transform->linear[0][1] + (s64)v->y * transform->linear[1][1] + (s64)v->z * transform->linear[2][1]
+                           + transform->translation.v32.y);
+    out->z = Q_6_10_TO_INT((s64)v->x * transform->linear[0][2] + (s64)v->y * transform->linear[1][2] + (s64)v->z * transform->linear[2][2]
+                           + transform->translation.v32.z);
 }
 
 UNUSED void Transform3D_PointTransformIP(Vec3_32 *v, Transform3D *transform)
@@ -638,25 +672,39 @@ UNUSED void Transform3D_PointTransformIP(Vec3_32 *v, Transform3D *transform)
     s32 x = v->x;
     s32 y = v->y;
 
-    v->x = Q_6_10_TO_INT((s64)x * transform->linear[0][0] + (s64)y * transform->linear[1][0] + (s64)v->z * transform->linear[2][0] + transform->translation.v32.x);
-    v->y = Q_6_10_TO_INT((s64)x * transform->linear[0][1] + (s64)y * transform->linear[1][1] + (s64)v->z * transform->linear[2][1] + transform->translation.v32.y);
-    v->z = Q_6_10_TO_INT((s64)x * transform->linear[0][2] + (s64)y * transform->linear[1][2] + (s64)v->z * transform->linear[2][2] + transform->translation.v32.z);
+    v->x = Q_6_10_TO_INT((s64)x * transform->linear[0][0] + (s64)y * transform->linear[1][0] + (s64)v->z * transform->linear[2][0]
+                         + transform->translation.v32.x);
+    v->y = Q_6_10_TO_INT((s64)x * transform->linear[0][1] + (s64)y * transform->linear[1][1] + (s64)v->z * transform->linear[2][1]
+                         + transform->translation.v32.y);
+    v->z = Q_6_10_TO_INT((s64)x * transform->linear[0][2] + (s64)y * transform->linear[1][2] + (s64)v->z * transform->linear[2][2]
+                         + transform->translation.v32.z);
 #else
     // This uses the already modified values rather than
     // the originals for the y and z transforms
-    v->x = Q_6_10_TO_INT((s64)v->x * transform->linear[0][0] + (s64)v->y * transform->linear[1][0] + (s64)v->z * transform->linear[2][0] + transform->translation.v32.x);
-    v->y = Q_6_10_TO_INT((s64)v->x * transform->linear[0][1] + (s64)v->y * transform->linear[1][1] + (s64)v->z * transform->linear[2][1] + transform->translation.v32.y);
-    v->z = Q_6_10_TO_INT((s64)v->x * transform->linear[0][2] + (s64)v->y * transform->linear[1][2] + (s64)v->z * transform->linear[2][2] + transform->translation.v32.z);
+    v->x = Q_6_10_TO_INT((s64)v->x * transform->linear[0][0] + (s64)v->y * transform->linear[1][0] + (s64)v->z * transform->linear[2][0]
+                         + transform->translation.v32.x);
+    v->y = Q_6_10_TO_INT((s64)v->x * transform->linear[0][1] + (s64)v->y * transform->linear[1][1] + (s64)v->z * transform->linear[2][1]
+                         + transform->translation.v32.y);
+    v->z = Q_6_10_TO_INT((s64)v->x * transform->linear[0][2] + (s64)v->y * transform->linear[1][2] + (s64)v->z * transform->linear[2][2]
+                         + transform->translation.v32.z);
 #endif
 }
 
 UNUSED void Transform3D_PointProject(Transform3D *transform, Vec3_32 *v, Vec3_32 *out)
 {
-    s32 scale = SQUARE(Q_6_10(1.0)) / Q_6_10_TO_INT((s64)v->x * transform->translation.v32.x + (s64)v->y * transform->translation.v32.y + (s64)v->z * transform->translation.v32.z + SQUARE(Q_6_10(1.0)));
+    s32 scale = SQUARE(Q_6_10(1.0))
+        / Q_6_10_TO_INT((s64)v->x * transform->translation.v32.x + (s64)v->y * transform->translation.v32.y
+                        + (s64)v->z * transform->translation.v32.z + SQUARE(Q_6_10(1.0)));
 
-    out->x = Q_6_10_MUL(Q_6_10_TO_INT((s64)v->x * transform->linear[0][0] + (s64)v->y * transform->linear[0][1] + (s64)v->z * transform->linear[0][2]), scale);
-    out->y = Q_6_10_MUL(Q_6_10_TO_INT((s64)v->x * transform->linear[1][0] + (s64)v->y * transform->linear[1][1] + (s64)v->z * transform->linear[1][2]), scale);
-    out->z = Q_6_10_MUL(Q_6_10_TO_INT((s64)v->x * transform->linear[2][0] + (s64)v->y * transform->linear[2][1] + (s64)v->z * transform->linear[2][2]), scale);
+    out->x = Q_6_10_MUL(
+        Q_6_10_TO_INT((s64)v->x * transform->linear[0][0] + (s64)v->y * transform->linear[0][1] + (s64)v->z * transform->linear[0][2]),
+        scale);
+    out->y = Q_6_10_MUL(
+        Q_6_10_TO_INT((s64)v->x * transform->linear[1][0] + (s64)v->y * transform->linear[1][1] + (s64)v->z * transform->linear[1][2]),
+        scale);
+    out->z = Q_6_10_MUL(
+        Q_6_10_TO_INT((s64)v->x * transform->linear[2][0] + (s64)v->y * transform->linear[2][1] + (s64)v->z * transform->linear[2][2]),
+        scale);
 }
 
 UNUSED void Transform3D_PointProjectIP(Transform3D *transform, Vec3_32 *v)
@@ -664,11 +712,16 @@ UNUSED void Transform3D_PointProjectIP(Transform3D *transform, Vec3_32 *v)
     s32 x = v->x;
     s32 y = v->y;
 
-    s32 scale = SQUARE(Q_6_10(1.0)) / Q_6_10_TO_INT(x * transform->translation.v32.x + y * transform->translation.v32.y + v->z * transform->translation.v32.z + SQUARE(Q_6_10(1.0)));
+    s32 scale = SQUARE(Q_6_10(1.0))
+        / Q_6_10_TO_INT(x * transform->translation.v32.x + y * transform->translation.v32.y + v->z * transform->translation.v32.z
+                        + SQUARE(Q_6_10(1.0)));
 
-    v->x = Q_6_10_MUL(Q_6_10_TO_INT((s64)x * transform->linear[0][0] + (s64)y * transform->linear[0][1] + (s64)v->z * transform->linear[0][2]), scale);
-    v->y = Q_6_10_MUL(Q_6_10_TO_INT((s64)x * transform->linear[1][0] + (s64)y * transform->linear[1][1] + (s64)v->z * transform->linear[1][2]), scale);
-    v->z = Q_6_10_MUL(Q_6_10_TO_INT((s64)x * transform->linear[2][0] + (s64)y * transform->linear[2][1] + (s64)v->z * transform->linear[2][2]), scale);
+    v->x = Q_6_10_MUL(
+        Q_6_10_TO_INT((s64)x * transform->linear[0][0] + (s64)y * transform->linear[0][1] + (s64)v->z * transform->linear[0][2]), scale);
+    v->y = Q_6_10_MUL(
+        Q_6_10_TO_INT((s64)x * transform->linear[1][0] + (s64)y * transform->linear[1][1] + (s64)v->z * transform->linear[1][2]), scale);
+    v->z = Q_6_10_MUL(
+        Q_6_10_TO_INT((s64)x * transform->linear[2][0] + (s64)y * transform->linear[2][1] + (s64)v->z * transform->linear[2][2]), scale);
 }
 
 UNUSED void Transform3D_RotateX(Transform3D *transform, u16 angle)
@@ -826,30 +879,66 @@ static void Transform3D_Transpose(Transform3D *transform)
 
 UNUSED void Transform3D_Invert(Transform3D *transform)
 {
-    s32 scale = SQUARE(Q_6_10(1.0)) / (transform->linear[0][0] * Q_6_10_TO_INT(transform->linear[1][1] * transform->linear[2][2] - transform->linear[1][2] * transform->linear[2][1]) - transform->linear[0][1] * Q_6_10_TO_INT(transform->linear[1][0] * transform->linear[2][2] - transform->linear[1][2] * transform->linear[2][0]) + transform->linear[0][2] * Q_6_10_TO_INT(transform->linear[1][0] * transform->linear[2][1] - transform->linear[1][1] * transform->linear[2][0]));
+    s32 scale = SQUARE(Q_6_10(1.0))
+        / (transform->linear[0][0]
+               * Q_6_10_TO_INT(transform->linear[1][1] * transform->linear[2][2] - transform->linear[1][2] * transform->linear[2][1])
+           - transform->linear[0][1]
+               * Q_6_10_TO_INT(transform->linear[1][0] * transform->linear[2][2] - transform->linear[1][2] * transform->linear[2][0])
+           + transform->linear[0][2]
+               * Q_6_10_TO_INT(transform->linear[1][0] * transform->linear[2][1] - transform->linear[1][1] * transform->linear[2][0]));
 
     Transform3D tmpTransform = *transform;
 
-    transform->linear[0][0] = Q_6_10_MUL(scale, Q_6_10_TO_INT(tmpTransform.linear[1][1] * tmpTransform.linear[2][2] - tmpTransform.linear[1][2] * tmpTransform.linear[2][1]));
-    transform->linear[0][1] = Q_6_10_MUL(-scale, Q_6_10_TO_INT(tmpTransform.linear[0][1] * tmpTransform.linear[2][2] - tmpTransform.linear[0][2] * tmpTransform.linear[2][1]));
-    transform->linear[0][2] = Q_6_10_MUL(scale, Q_6_10_TO_INT(tmpTransform.linear[0][1] * tmpTransform.linear[1][2] - tmpTransform.linear[0][2] * tmpTransform.linear[1][1]));
-    transform->linear[1][0] = Q_6_10_MUL(-scale, Q_6_10_TO_INT(tmpTransform.linear[1][0] * tmpTransform.linear[2][2] - tmpTransform.linear[1][2] * tmpTransform.linear[2][0]));
-    transform->linear[1][1] = Q_6_10_MUL(scale, Q_6_10_TO_INT(tmpTransform.linear[0][0] * tmpTransform.linear[2][2] - tmpTransform.linear[0][2] * tmpTransform.linear[2][0]));
-    transform->linear[1][2] = Q_6_10_MUL(-scale, Q_6_10_TO_INT(tmpTransform.linear[0][0] * tmpTransform.linear[1][2] - tmpTransform.linear[0][2] * tmpTransform.linear[1][0]));
-    transform->linear[2][0] = Q_6_10_MUL(scale, Q_6_10_TO_INT(tmpTransform.linear[1][0] * tmpTransform.linear[2][1] - tmpTransform.linear[1][1] * tmpTransform.linear[2][0]));
-    transform->linear[2][1] = Q_6_10_MUL(-scale, Q_6_10_TO_INT(tmpTransform.linear[0][0] * tmpTransform.linear[2][1] - tmpTransform.linear[0][1] * tmpTransform.linear[2][0]));
-    transform->linear[2][2] = Q_6_10_MUL(scale, Q_6_10_TO_INT(tmpTransform.linear[0][0] * tmpTransform.linear[1][1] - tmpTransform.linear[0][1] * tmpTransform.linear[1][0]));
+    transform->linear[0][0] = Q_6_10_MUL(
+        scale,
+        Q_6_10_TO_INT(tmpTransform.linear[1][1] * tmpTransform.linear[2][2] - tmpTransform.linear[1][2] * tmpTransform.linear[2][1]));
+    transform->linear[0][1] = Q_6_10_MUL(
+        -scale,
+        Q_6_10_TO_INT(tmpTransform.linear[0][1] * tmpTransform.linear[2][2] - tmpTransform.linear[0][2] * tmpTransform.linear[2][1]));
+    transform->linear[0][2] = Q_6_10_MUL(
+        scale,
+        Q_6_10_TO_INT(tmpTransform.linear[0][1] * tmpTransform.linear[1][2] - tmpTransform.linear[0][2] * tmpTransform.linear[1][1]));
+    transform->linear[1][0] = Q_6_10_MUL(
+        -scale,
+        Q_6_10_TO_INT(tmpTransform.linear[1][0] * tmpTransform.linear[2][2] - tmpTransform.linear[1][2] * tmpTransform.linear[2][0]));
+    transform->linear[1][1] = Q_6_10_MUL(
+        scale,
+        Q_6_10_TO_INT(tmpTransform.linear[0][0] * tmpTransform.linear[2][2] - tmpTransform.linear[0][2] * tmpTransform.linear[2][0]));
+    transform->linear[1][2] = Q_6_10_MUL(
+        -scale,
+        Q_6_10_TO_INT(tmpTransform.linear[0][0] * tmpTransform.linear[1][2] - tmpTransform.linear[0][2] * tmpTransform.linear[1][0]));
+    transform->linear[2][0] = Q_6_10_MUL(
+        scale,
+        Q_6_10_TO_INT(tmpTransform.linear[1][0] * tmpTransform.linear[2][1] - tmpTransform.linear[1][1] * tmpTransform.linear[2][0]));
+    transform->linear[2][1] = Q_6_10_MUL(
+        -scale,
+        Q_6_10_TO_INT(tmpTransform.linear[0][0] * tmpTransform.linear[2][1] - tmpTransform.linear[0][1] * tmpTransform.linear[2][0]));
+    transform->linear[2][2] = Q_6_10_MUL(
+        scale,
+        Q_6_10_TO_INT(tmpTransform.linear[0][0] * tmpTransform.linear[1][1] - tmpTransform.linear[0][1] * tmpTransform.linear[1][0]));
 
 #if BUGFIX
-    transform->translation.v32.x = Q_6_10_TO_INT(-((s64)tmpTransform.translation.v32.x * tmpTransform.linear[0][0] + (s64)tmpTransform.translation.v32.y * tmpTransform.linear[1][0] + (s64)tmpTransform.translation.v32.z * tmpTransform.linear[2][0]));
-    transform->translation.v32.y = Q_6_10_TO_INT(-((s64)tmpTransform.translation.v32.x * tmpTransform.linear[0][1] + (s64)tmpTransform.translation.v32.y * tmpTransform.linear[1][1] + (s64)tmpTransform.translation.v32.z * tmpTransform.linear[2][1]));
-    transform->translation.v32.z = Q_6_10_TO_INT(-((s64)tmpTransform.translation.v32.x * tmpTransform.linear[0][2] + (s64)tmpTransform.translation.v32.y * tmpTransform.linear[1][2] + (s64)tmpTransform.translation.v32.z * tmpTransform.linear[2][2]));
+    transform->translation.v32.x = Q_6_10_TO_INT(-((s64)tmpTransform.translation.v32.x * tmpTransform.linear[0][0]
+                                                   + (s64)tmpTransform.translation.v32.y * tmpTransform.linear[1][0]
+                                                   + (s64)tmpTransform.translation.v32.z * tmpTransform.linear[2][0]));
+    transform->translation.v32.y = Q_6_10_TO_INT(-((s64)tmpTransform.translation.v32.x * tmpTransform.linear[0][1]
+                                                   + (s64)tmpTransform.translation.v32.y * tmpTransform.linear[1][1]
+                                                   + (s64)tmpTransform.translation.v32.z * tmpTransform.linear[2][1]));
+    transform->translation.v32.z = Q_6_10_TO_INT(-((s64)tmpTransform.translation.v32.x * tmpTransform.linear[0][2]
+                                                   + (s64)tmpTransform.translation.v32.y * tmpTransform.linear[1][2]
+                                                   + (s64)tmpTransform.translation.v32.z * tmpTransform.linear[2][2]));
 #else
     // I presume this is a leftover from when Transform3D used Vec3_16 for it's translation?
-    // If not, though... then why the hell don't you use the 32-bit version too???
-    transform->translation.v16.x = Q_6_10_TO_INT(-((s64)tmpTransform.translation.v32.x * tmpTransform.linear[0][0] + (s64)tmpTransform.translation.v32.y * tmpTransform.linear[1][0] + (s64)tmpTransform.translation.v32.z * tmpTransform.linear[2][0]));
-    transform->translation.v16.y = Q_6_10_TO_INT(-((s64)tmpTransform.translation.v32.x * tmpTransform.linear[0][1] + (s64)tmpTransform.translation.v32.y * tmpTransform.linear[1][1] + (s64)tmpTransform.translation.v32.z * tmpTransform.linear[2][1]));
-    transform->translation.v16.z = Q_6_10_TO_INT(-((s64)tmpTransform.translation.v32.x * tmpTransform.linear[0][2] + (s64)tmpTransform.translation.v32.y * tmpTransform.linear[1][2] + (s64)tmpTransform.translation.v32.z * tmpTransform.linear[2][2]));
+    // If not, though... then why the hell didn't they use the 32-bit version, anyway???
+    transform->translation.v16.x = Q_6_10_TO_INT(-((s64)tmpTransform.translation.v32.x * tmpTransform.linear[0][0]
+                                                   + (s64)tmpTransform.translation.v32.y * tmpTransform.linear[1][0]
+                                                   + (s64)tmpTransform.translation.v32.z * tmpTransform.linear[2][0]));
+    transform->translation.v16.y = Q_6_10_TO_INT(-((s64)tmpTransform.translation.v32.x * tmpTransform.linear[0][1]
+                                                   + (s64)tmpTransform.translation.v32.y * tmpTransform.linear[1][1]
+                                                   + (s64)tmpTransform.translation.v32.z * tmpTransform.linear[2][1]));
+    transform->translation.v16.z = Q_6_10_TO_INT(-((s64)tmpTransform.translation.v32.x * tmpTransform.linear[0][2]
+                                                   + (s64)tmpTransform.translation.v32.y * tmpTransform.linear[1][2]
+                                                   + (s64)tmpTransform.translation.v32.z * tmpTransform.linear[2][2]));
 #endif
 }
 
@@ -861,11 +950,14 @@ UNUSED void Transform3D_InvertRigid(Transform3D *transform)
 
     x = NEGATE(transform->translation.v32.x);
     y = NEGATE(transform->translation.v32.y);
-        NEGATE(transform->translation.v32.z);
+    NEGATE(transform->translation.v32.z);
 
-    transform->translation.v32.x = Q_6_10_TO_INT((s64)x * transform->linear[0][0] + (s64)y * transform->linear[1][0] + (s64)transform->translation.v32.z * transform->linear[2][0]);
-    transform->translation.v32.y = Q_6_10_TO_INT((s64)x * transform->linear[0][1] + (s64)y * transform->linear[1][1] + (s64)transform->translation.v32.z * transform->linear[2][1]);
-    transform->translation.v32.z = Q_6_10_TO_INT((s64)x * transform->linear[0][2] + (s64)y * transform->linear[1][2] + (s64)transform->translation.v32.z * transform->linear[2][2]);
+    transform->translation.v32.x = Q_6_10_TO_INT((s64)x * transform->linear[0][0] + (s64)y * transform->linear[1][0]
+                                                 + (s64)transform->translation.v32.z * transform->linear[2][0]);
+    transform->translation.v32.y = Q_6_10_TO_INT((s64)x * transform->linear[0][1] + (s64)y * transform->linear[1][1]
+                                                 + (s64)transform->translation.v32.z * transform->linear[2][1]);
+    transform->translation.v32.z = Q_6_10_TO_INT((s64)x * transform->linear[0][2] + (s64)y * transform->linear[1][2]
+                                                 + (s64)transform->translation.v32.z * transform->linear[2][2]);
 }
 
 UNUSED void Transform3D_FromQuaternion(Transform3D *transform, Quaternion *quat)
@@ -915,7 +1007,8 @@ UNUSED inline void TransformNode_Init(TransformNode *node)
 
 UNUSED inline TransformNode *TransformNode_GetRoot(TransformNode *node)
 {
-    for (; node->parent != NULL; node = node->parent);
+    for (; node->parent != NULL; node = node->parent)
+        ;
 
     return node;
 }
@@ -964,14 +1057,16 @@ UNUSED inline void TransformNode_AddChild(TransformNode *parent, TransformNode *
 UNUSED inline u16 TransformNode_GetChildCount(TransformNode *node)
 {
     u16 cnt;
-    for (cnt = 0, node = node->child; node != NULL; cnt++, node = node->next);
+    for (cnt = 0, node = node->child; node != NULL; cnt++, node = node->next)
+        ;
 
     return cnt;
 }
 
 UNUSED inline TransformNode *TransformNode_GetChildByIdx(TransformNode *node, u16 idx)
 {
-    for (node = node->child; node != NULL && idx != 0; idx--, node = node->next);
+    for (node = node->child; node != NULL && idx != 0; idx--, node = node->next)
+        ;
 
     return node;
 }
@@ -1016,19 +1111,29 @@ static Transform3D *TransformNode_GetLocal3D(TransformNode *node)
 {
     if (!(node->flags & TRANSFORM_LOCAL_VALID)) {
         if (node->transform.state3D.useTRS == TRUE) {
-            Transform3D_RotateXYZ(&node->transform.state3D.local, node->transform.state3D.rotation.x, node->transform.state3D.rotation.y, node->transform.state3D.rotation.z);
+            Transform3D_RotateXYZ(&node->transform.state3D.local, node->transform.state3D.rotation.x, node->transform.state3D.rotation.y,
+                                  node->transform.state3D.rotation.z);
 
-            node->transform.state3D.local.linear[0][0] = Q_6_10_MUL(node->transform.state3D.scale.x, node->transform.state3D.local.linear[0][0]);
-            node->transform.state3D.local.linear[0][1] = Q_6_10_MUL(node->transform.state3D.scale.x, node->transform.state3D.local.linear[0][1]);
-            node->transform.state3D.local.linear[0][2] = Q_6_10_MUL(node->transform.state3D.scale.x, node->transform.state3D.local.linear[0][2]);
+            node->transform.state3D.local.linear[0][0]
+                = Q_6_10_MUL(node->transform.state3D.scale.x, node->transform.state3D.local.linear[0][0]);
+            node->transform.state3D.local.linear[0][1]
+                = Q_6_10_MUL(node->transform.state3D.scale.x, node->transform.state3D.local.linear[0][1]);
+            node->transform.state3D.local.linear[0][2]
+                = Q_6_10_MUL(node->transform.state3D.scale.x, node->transform.state3D.local.linear[0][2]);
 
-            node->transform.state3D.local.linear[1][0] = Q_6_10_MUL(node->transform.state3D.scale.y, node->transform.state3D.local.linear[1][0]);
-            node->transform.state3D.local.linear[1][1] = Q_6_10_MUL(node->transform.state3D.scale.y, node->transform.state3D.local.linear[1][1]);
-            node->transform.state3D.local.linear[1][2] = Q_6_10_MUL(node->transform.state3D.scale.y, node->transform.state3D.local.linear[1][2]);
+            node->transform.state3D.local.linear[1][0]
+                = Q_6_10_MUL(node->transform.state3D.scale.y, node->transform.state3D.local.linear[1][0]);
+            node->transform.state3D.local.linear[1][1]
+                = Q_6_10_MUL(node->transform.state3D.scale.y, node->transform.state3D.local.linear[1][1]);
+            node->transform.state3D.local.linear[1][2]
+                = Q_6_10_MUL(node->transform.state3D.scale.y, node->transform.state3D.local.linear[1][2]);
 
-            node->transform.state3D.local.linear[2][0] = Q_6_10_MUL(node->transform.state3D.scale.z, node->transform.state3D.local.linear[2][0]);
-            node->transform.state3D.local.linear[2][1] = Q_6_10_MUL(node->transform.state3D.scale.z, node->transform.state3D.local.linear[2][1]);
-            node->transform.state3D.local.linear[2][2] = Q_6_10_MUL(node->transform.state3D.scale.z, node->transform.state3D.local.linear[2][2]);
+            node->transform.state3D.local.linear[2][0]
+                = Q_6_10_MUL(node->transform.state3D.scale.z, node->transform.state3D.local.linear[2][0]);
+            node->transform.state3D.local.linear[2][1]
+                = Q_6_10_MUL(node->transform.state3D.scale.z, node->transform.state3D.local.linear[2][1]);
+            node->transform.state3D.local.linear[2][2]
+                = Q_6_10_MUL(node->transform.state3D.scale.z, node->transform.state3D.local.linear[2][2]);
         }
 
         node->flags |= TRANSFORM_LOCAL_VALID;

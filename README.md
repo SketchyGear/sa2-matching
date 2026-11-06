@@ -1,4 +1,4 @@
-<h1 align="center">Sonic Advance Trilogy</h1>
+<h1 align="center">Sonic Advance Trilogy ~~test test, i gotta test actions, somehow!~~</h1>
 <p align="center">
   <img height="240" src=".github/media/titlescreen.png" alt="Sonic Advance 2 title screen">
 </p>

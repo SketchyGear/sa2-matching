@@ -6,7 +6,7 @@
 #define RAND_CONST 0x37119371
 
 // Converts a number to Q6.10 fixed-point format
-#define Q_6_10(n) ((s16)((n) * 1024))
+#define Q_6_10(n) ((s16)((n)*1024))
 
 // Converts a Q6.10 fixed-point format number to a regular integer
 #define Q_6_10_TO_INT(n) ((n) >> 10)

@@ -22,7 +22,7 @@ typedef enum {
     TRANSFORM_LOCAL_VALID = (1 << 0),
     TRANSFORM_WORLD_VALID = (1 << 1),
 
-    TRANSFORM_ALL         = TRANSFORM_LOCAL_VALID | TRANSFORM_WORLD_VALID
+    TRANSFORM_ALL = TRANSFORM_LOCAL_VALID | TRANSFORM_WORLD_VALID
 } TransformNodeFlags;
 
 typedef struct {
@@ -38,7 +38,7 @@ typedef struct {
 } Vec3_32;
 
 // NOTE: This only exists because of a bug(?)
-//      in Transform3D_Invert, thanks SEGA/Dimps!
+//       in Transform3D_Invert, thanks SEGA/Dimps!
 typedef union {
     Vec3_16 v16;
     Vec3_32 v32;

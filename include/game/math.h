@@ -6,7 +6,7 @@
 #define RAND_CONST 0x37119371
 
 // Converts a number to Q6.10 fixed-point format
-#define Q_6_10(n) ((s16)((n)*1024))
+#define Q_6_10(n) ((s16)((n) * 1024))
 
 // Converts a Q6.10 fixed-point format number to a regular integer
 #define Q_6_10_TO_INT(n) ((n) >> 10)
@@ -147,7 +147,7 @@ UNUSED s32 HermiteCubicInterpolate(s32 p0, s32 m0, s32 m1, s32 p1, s32 t, u8 n);
 
 UNUSED inline void Transform2D_Init(Transform2D *transform);
 UNUSED void Transform2D_Apply(Transform2D *local, Transform2D *parent, Transform2D *out);
-static void Transform2D_ApplyToLocal(Transform2D *local, Transform2D *parent);
+void Transform2D_ApplyToLocal(Transform2D *local, Transform2D *parent);
 UNUSED void Transform2D_ApplyToParent(Transform2D *local, Transform2D *parent);
 UNUSED void Transform2D_Invert(Transform2D *transform);
 
@@ -178,7 +178,7 @@ inline void Transform3D_Clear(Transform3D *transform);
 inline void Transform3D_Init(Transform3D *transform);
 UNUSED inline void Transform3D_InitTranslation(Transform3D *transform, s32 x, s32 y, s32 z);
 UNUSED inline void Transform3D_InitIdentity(Transform3D *transform, s32 m00, s32 m11, s32 m22);
-static void Transform3D_Apply(Transform3D *local, Transform3D *parent, Transform3D *out);
+void Transform3D_Apply(Transform3D *local, Transform3D *parent, Transform3D *out);
 UNUSED void Transform3D_ApplyToLocal(Transform3D *local, Transform3D *parent);
 UNUSED void Transform3D_ApplyToParent(Transform3D *local, Transform3D *parent);
 UNUSED void Transform3D_PointTransform(Vec3_32 *v, Transform3D *transform, Vec3_32 *out);
@@ -200,6 +200,7 @@ UNUSED inline void TransformNode_Init(TransformNode *node);
 UNUSED inline TransformNode *TransformNode_GetRoot(TransformNode *node);
 inline void TransformNode_DetachFromParent(TransformNode *node);
 UNUSED inline void TransformNode_AddChild(TransformNode *parent, TransformNode *child);
+inline bool8 TransformNode_RemoveChild(TransformNode *parent, TransformNode *child);
 UNUSED inline u16 TransformNode_GetChildCount(TransformNode *node);
 UNUSED inline TransformNode *TransformNode_GetChildByIdx(TransformNode *node, u16 idx);
 inline void TransformNode_GetLocal2D(TransformNode *node, Transform2D *transform);
@@ -207,7 +208,7 @@ UNUSED inline void TransformNode_SetLocal2D(TransformNode *node, Transform2D *tr
 UNUSED inline void TransformNode_GetWorld2D(TransformNode *node, Transform2D *transform);
 UNUSED inline void TransformNode_InitLocal3D(TransformNode *node);
 UNUSED inline void TransformNode_InitTRS(TransformNode *node);
-static Transform3D *TransformNode_GetLocal3D(TransformNode *node);
+Transform3D *TransformNode_GetLocal3D(TransformNode *node);
 inline Transform3D *TransformNode_GetWorld3D(TransformNode *node);
 UNUSED inline Transform3D *TransformNode_UpdateWorld3D(TransformNode *node);
 

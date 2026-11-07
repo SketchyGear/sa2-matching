@@ -115,8 +115,8 @@ inline s16 AngleDiff(u16 angleA, u16 angleB, u8 n);
 
 inline u32 Lerp(s32 start, s32 end, s32 t, u8 n);
 UNUSED inline u16 LerpAngle(u16 angleStart, u16 angleEnd, u8 n1, s16 t, u8 n2);
-inline u32 LerpToEnd(s32 start, s32 end, s32 t, u8 n, u8 cnt);
-inline u32 LerpToStart(s32 start, s32 end, s32 t, u8 n, u8 cnt);
+inline s32 LerpToEnd(s32 start, s32 end, s32 t, u8 n, u8 cnt);
+inline s32 LerpToStart(s32 start, s32 end, s32 t, u8 n, u8 cnt);
 
 UNUSED inline s32 WeightedLeft(s32 prev, s32 cur, s32 next);
 UNUSED inline s32 WeightedRight(s32 prev, s32 cur, s32 next);

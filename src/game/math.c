@@ -5,12 +5,10 @@
 #include "trig.h"
 #include "game/math.h"
 
-static const u16 gCubicBSplineBasis[2] = { Q_4_12(2.0 / 3.0), Q_4_12(1.0 / 6.0) };
+const u16 gCubicBSplineBasis[2] = { Q_4_12(2.0 / 3.0), Q_4_12(1.0 / 6.0) };
 
-static u32 gRngPrevValue = 0;
-static u32 gRngValue = 0;
-
-static inline bool8 TransformNode_RemoveChild(TransformNode *parent, TransformNode *child);
+u32 gRngPrevValue = 0;
+u32 gRngValue = 0;
 
 inline u16 Random(void)
 {
@@ -287,7 +285,7 @@ UNUSED void Transform2D_Apply(Transform2D *local, Transform2D *parent, Transform
     out->rotation = CLAMP_SIN_PERIOD(local->rotation + parent->rotation);
 }
 
-static void Transform2D_ApplyToLocal(Transform2D *local, Transform2D *parent)
+void Transform2D_ApplyToLocal(Transform2D *local, Transform2D *parent)
 {
     s32 x, y;
 
@@ -550,7 +548,7 @@ UNUSED inline void Transform3D_InitIdentity(Transform3D *transform, s32 m00, s32
     transform->linear[2][2] = m22;
 }
 
-static void Transform3D_Apply(Transform3D *local, Transform3D *parent, Transform3D *out)
+void Transform3D_Apply(Transform3D *local, Transform3D *parent, Transform3D *out)
 {
     out->linear[0][0] = Q_6_10_TO_INT(local->linear[0][0] * parent->linear[0][0] + local->linear[0][1] * parent->linear[1][0]
                                       + local->linear[0][2] * parent->linear[2][0]);
@@ -1023,7 +1021,16 @@ inline void TransformNode_DetachFromParent(TransformNode *node)
     }
 }
 
-static inline bool8 TransformNode_RemoveChild(TransformNode *parent, TransformNode *child)
+UNUSED inline void TransformNode_AddChild(TransformNode *parent, TransformNode *child)
+{
+    TransformNode_DetachFromParent(child);
+
+    child->parent = parent;
+    child->next = parent->child;
+    parent->child = child;
+}
+
+inline bool8 TransformNode_RemoveChild(TransformNode *parent, TransformNode *child)
 {
     TransformNode *curChild, *prevChild;
 
@@ -1043,15 +1050,6 @@ static inline bool8 TransformNode_RemoveChild(TransformNode *parent, TransformNo
     }
 
     return FALSE;
-}
-
-UNUSED inline void TransformNode_AddChild(TransformNode *parent, TransformNode *child)
-{
-    TransformNode_DetachFromParent(child);
-
-    child->parent = parent;
-    child->next = parent->child;
-    parent->child = child;
 }
 
 UNUSED inline u16 TransformNode_GetChildCount(TransformNode *node)
@@ -1107,7 +1105,7 @@ UNUSED inline void TransformNode_InitTRS(TransformNode *node)
     node->transform.state3D.scale.x = node->transform.state3D.scale.y = node->transform.state3D.scale.z = Q_6_10(1.0);
 }
 
-static Transform3D *TransformNode_GetLocal3D(TransformNode *node)
+Transform3D *TransformNode_GetLocal3D(TransformNode *node)
 {
     if (!(node->flags & TRANSFORM_LOCAL_VALID)) {
         if (node->transform.state3D.useTRS == TRUE) {

@@ -90,8 +90,8 @@ struct TransformNode {
     TransformNodeTransform transform;
 };
 
-inline u16 Random(void);
-inline void SeedRng(u32 prev, u32 cur);
+u16 Random(void);
+void SeedRng(u32 prev, u32 cur);
 
 // Returns a 32-bit pseudorandom number
 #define Random32() ((Random() << 16) | Random())
@@ -109,43 +109,43 @@ inline void SeedRng(u32 prev, u32 cur);
         SeedRng(rand2, rand3);                                                                                                             \
     })
 
-UNUSED inline u32 MaxAbs(s32 a, s32 b);
-inline u32 ApproxVecLen(s32 a, s32 b);
-inline s16 AngleDiff(u16 angleA, u16 angleB, u8 n);
+UNUSED u32 MaxAbs(s32 a, s32 b);
+u32 ApproxVecLen(s32 a, s32 b);
+s16 AngleDiff(u16 angleA, u16 angleB, u8 n);
 
-inline u32 Lerp(s32 start, s32 end, s32 t, u8 n);
-UNUSED inline u16 LerpAngle(u16 angleStart, u16 angleEnd, u8 n1, s16 t, u8 n2);
-inline s32 LerpToEnd(s32 start, s32 end, s32 t, u8 n, u8 cnt);
-inline s32 LerpToStart(s32 start, s32 end, s32 t, u8 n, u8 cnt);
+u32 Lerp(s32 start, s32 end, s32 t, u8 n);
+UNUSED u16 LerpAngle(u16 angleStart, u16 angleEnd, u8 n1, s16 t, u8 n2);
+s32 LerpToEnd(s32 start, s32 end, s32 t, u8 n, u8 cnt);
+s32 LerpToStart(s32 start, s32 end, s32 t, u8 n, u8 cnt);
 
-UNUSED inline s32 WeightedLeft(s32 prev, s32 cur, s32 next);
-UNUSED inline s32 WeightedRight(s32 prev, s32 cur, s32 next);
-UNUSED inline s32 WeightedLeft2(s32 prev, s32 cur, s32 next);
-UNUSED inline s32 WeightedRight2(s32 prev, s32 cur, s32 next);
+UNUSED s32 WeightedLeft(s32 prev, s32 cur, s32 next);
+UNUSED s32 WeightedRight(s32 prev, s32 cur, s32 next);
+UNUSED s32 WeightedLeft2(s32 prev, s32 cur, s32 next);
+UNUSED s32 WeightedRight2(s32 prev, s32 cur, s32 next);
 
-inline s32 DeltaScaled(s32 start, s32 end, s32 t, UNUSED s32 adjust, UNUSED s32 offset, u8 n);
-inline s32 Delta(s32 start, s32 end);
+s32 DeltaScaled(s32 start, s32 end, s32 t, UNUSED s32 adjust, UNUSED s32 offset, u8 n);
+s32 Delta(s32 start, s32 end);
 
-inline s32 CurveOffsetScaled(s32 prev, s32 cur, s32 next, s32 t, UNUSED s32 adjust, UNUSED s32 offset, u8 n);
-inline s32 CurveOffset(s32 prev, s32 cur, s32 next);
-UNUSED inline s32 CurveOffsetScaled2(s32 prev, s32 cur, s32 next, s32 t, UNUSED s32 adjust, UNUSED s32 offset, u8 n);
-UNUSED inline s32 CurveOffset2(s32 prev, s32 cur, s32 next);
+s32 CurveOffsetScaled(s32 prev, s32 cur, s32 next, s32 t, UNUSED s32 adjust, UNUSED s32 offset, u8 n);
+s32 CurveOffset(s32 prev, s32 cur, s32 next);
+UNUSED s32 CurveOffsetScaled2(s32 prev, s32 cur, s32 next, s32 t, UNUSED s32 adjust, UNUSED s32 offset, u8 n);
+UNUSED s32 CurveOffset2(s32 prev, s32 cur, s32 next);
 
-UNUSED inline s32 DeltaCurveOffsetScaled(s32 prev, s32 cur, s32 next, s32 t, s32 adjust, s32 offset, u8 n);
-UNUSED inline s32 DeltaCurveOffsetScaledInverse(s32 prev, s32 cur, s32 next, s32 t, s32 adjust, s32 offset, u8 n);
+UNUSED s32 DeltaCurveOffsetScaled(s32 prev, s32 cur, s32 next, s32 t, s32 adjust, s32 offset, u8 n);
+UNUSED s32 DeltaCurveOffsetScaledInverse(s32 prev, s32 cur, s32 next, s32 t, s32 adjust, s32 offset, u8 n);
 
-UNUSED inline s32 DeltaCentral(s32 prev, s32 cur, s32 next);
+UNUSED s32 DeltaCentral(s32 prev, s32 cur, s32 next);
 
-inline s16 CubicBSplineSegment(s16 *b, u16 t);
-inline u16 CubicBSpline(s16 *b, u16 t);
+s16 CubicBSplineSegment(s16 *b, u16 t);
+u16 CubicBSpline(s16 *b, u16 t);
 #if (GAME == GAME_SA3)
-inline s16 CubicBSplineDirect(s16 *b, u16 t);
+s16 CubicBSplineDirect(s16 *b, u16 t);
 #endif
 
 UNUSED s32 BezierCubicInterpolate(s32 p0, s32 p1, s32 p2, s32 p3, s32 t, u8 n);
 UNUSED s32 HermiteCubicInterpolate(s32 p0, s32 m0, s32 m1, s32 p1, s32 t, u8 n);
 
-UNUSED inline void Transform2D_Init(Transform2D *transform);
+UNUSED void Transform2D_Init(Transform2D *transform);
 UNUSED void Transform2D_Apply(Transform2D *local, Transform2D *parent, Transform2D *out);
 void Transform2D_ApplyToLocal(Transform2D *local, Transform2D *parent);
 UNUSED void Transform2D_ApplyToParent(Transform2D *local, Transform2D *parent);
@@ -158,26 +158,26 @@ static inline void Vec3_Sub(Vec3_32 *u, Vec3_32 *v, Vec3_16 *out)
     out->z = u->z - v->z;
 }
 
-inline void Vec3_Normalize(Vec3_16 *v, u8 n);
-UNUSED inline s32 Vec3_Dot(Vec3_16 *u, Vec3_16 *v, u8 n);
-inline void Vec3_Cross(Vec3_16 *u, Vec3_16 *v, Vec3_16 *out, u8 n);
+void Vec3_Normalize(Vec3_16 *v, u8 n);
+UNUSED s32 Vec3_Dot(Vec3_16 *u, Vec3_16 *v, u8 n);
+void Vec3_Cross(Vec3_16 *u, Vec3_16 *v, Vec3_16 *out, u8 n);
 
-UNUSED inline void Quaternion_Init(Quaternion *quat);
+UNUSED void Quaternion_Init(Quaternion *quat);
 UNUSED void Quaternion_Normalize(Quaternion *quat);
 UNUSED void Quaternion_Apply(Quaternion *local, Quaternion *parent, Quaternion *out);
 UNUSED void Quaternion_ApplyToLocal(Quaternion *local, Quaternion *parent);
 UNUSED void Quaternion_ApplyToParent(Quaternion *local, Quaternion *parent);
-UNUSED inline void Quaternion_Conjugate(Quaternion *quat);
+UNUSED void Quaternion_Conjugate(Quaternion *quat);
 UNUSED void Quaternion_Invert(Quaternion *quat);
-UNUSED inline void Quaternion_RotateX(Quaternion *quat, u16 angle);
-UNUSED inline void Quaternion_RotateY(Quaternion *quat, u16 angle);
-UNUSED inline void Quaternion_RotateZ(Quaternion *quat, u16 angle);
-UNUSED inline void Quaternion_RotateAxis(Quaternion *quat, u16 angle, Vec3_16 *axis);
+UNUSED void Quaternion_RotateX(Quaternion *quat, u16 angle);
+UNUSED void Quaternion_RotateY(Quaternion *quat, u16 angle);
+UNUSED void Quaternion_RotateZ(Quaternion *quat, u16 angle);
+UNUSED void Quaternion_RotateAxis(Quaternion *quat, u16 angle, Vec3_16 *axis);
 
-inline void Transform3D_Clear(Transform3D *transform);
-inline void Transform3D_Init(Transform3D *transform);
-UNUSED inline void Transform3D_InitTranslation(Transform3D *transform, s32 x, s32 y, s32 z);
-UNUSED inline void Transform3D_InitIdentity(Transform3D *transform, s32 m00, s32 m11, s32 m22);
+void Transform3D_Clear(Transform3D *transform);
+void Transform3D_Init(Transform3D *transform);
+UNUSED void Transform3D_InitTranslation(Transform3D *transform, s32 x, s32 y, s32 z);
+UNUSED void Transform3D_InitIdentity(Transform3D *transform, s32 m00, s32 m11, s32 m22);
 void Transform3D_Apply(Transform3D *local, Transform3D *parent, Transform3D *out);
 UNUSED void Transform3D_ApplyToLocal(Transform3D *local, Transform3D *parent);
 UNUSED void Transform3D_ApplyToParent(Transform3D *local, Transform3D *parent);
@@ -196,22 +196,22 @@ UNUSED void Transform3D_Invert(Transform3D *transform);
 UNUSED void Transform3D_InvertRigid(Transform3D *transform);
 UNUSED void Transform3D_FromQuaternion(Transform3D *transform, Quaternion *quat);
 
-UNUSED inline void TransformNode_Init(TransformNode *node);
-UNUSED inline TransformNode *TransformNode_GetRoot(TransformNode *node);
-inline void TransformNode_DetachFromParent(TransformNode *node);
-UNUSED inline void TransformNode_AddChild(TransformNode *parent, TransformNode *child);
-inline bool8 TransformNode_RemoveChild(TransformNode *parent, TransformNode *child);
-UNUSED inline u16 TransformNode_GetChildCount(TransformNode *node);
-UNUSED inline TransformNode *TransformNode_GetChildByIdx(TransformNode *node, u16 idx);
-inline void TransformNode_GetLocal2D(TransformNode *node, Transform2D *transform);
-UNUSED inline void TransformNode_SetLocal2D(TransformNode *node, Transform2D *transform);
-UNUSED inline void TransformNode_GetWorld2D(TransformNode *node, Transform2D *transform);
-UNUSED inline void TransformNode_InitLocal3D(TransformNode *node);
-UNUSED inline void TransformNode_InitTRS(TransformNode *node);
+UNUSED void TransformNode_Init(TransformNode *node);
+UNUSED TransformNode *TransformNode_GetRoot(TransformNode *node);
+void TransformNode_DetachFromParent(TransformNode *node);
+UNUSED void TransformNode_AddChild(TransformNode *parent, TransformNode *child);
+bool8 TransformNode_RemoveChild(TransformNode *parent, TransformNode *child);
+UNUSED u16 TransformNode_GetChildCount(TransformNode *node);
+UNUSED TransformNode *TransformNode_GetChildByIdx(TransformNode *node, u16 idx);
+void TransformNode_GetLocal2D(TransformNode *node, Transform2D *transform);
+UNUSED void TransformNode_SetLocal2D(TransformNode *node, Transform2D *transform);
+UNUSED void TransformNode_GetWorld2D(TransformNode *node, Transform2D *transform);
+UNUSED void TransformNode_InitLocal3D(TransformNode *node);
+UNUSED void TransformNode_InitTRS(TransformNode *node);
 Transform3D *TransformNode_GetLocal3D(TransformNode *node);
-inline Transform3D *TransformNode_GetWorld3D(TransformNode *node);
-UNUSED inline Transform3D *TransformNode_UpdateWorld3D(TransformNode *node);
+Transform3D *TransformNode_GetWorld3D(TransformNode *node);
+UNUSED Transform3D *TransformNode_UpdateWorld3D(TransformNode *node);
 
-UNUSED inline void Math_DummyFunc(void);
+UNUSED void Math_DummyFunc(void);
 
 #endif // GUARD_MATH_H

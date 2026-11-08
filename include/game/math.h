@@ -6,7 +6,7 @@
 #define RAND_CONST 0x37119371
 
 // Converts a number to Q6.10 fixed-point format
-#define Q_6_10(n) ((s16)((n) * 1024))
+#define Q_6_10(n) ((s16)((n)*1024))
 
 // Converts a Q6.10 fixed-point format number to a regular integer
 #define Q_6_10_TO_INT(n) ((n) >> 10)
@@ -115,8 +115,8 @@ s16 AngleDiff(u16 angleA, u16 angleB, u8 n);
 
 u32 Lerp(s32 start, s32 end, s32 t, u8 n);
 u16 LerpAngle(u16 angleStart, u16 angleEnd, u8 n1, s16 t, u8 n2);
-u32 LerpToEnd(s32 start, s32 end, s32 t, u8 n, u8 cnt);
-u32 LerpToStart(s32 start, s32 end, s32 t, u8 n, u8 cnt);
+s32 LerpToEnd(s32 start, s32 end, s32 t, u8 n, u8 cnt);
+s32 LerpToStart(s32 start, s32 end, s32 t, u8 n, u8 cnt);
 
 s32 WeightedLeft(s32 prev, s32 cur, s32 next);
 s32 WeightedRight(s32 prev, s32 cur, s32 next);

@@ -10,6 +10,9 @@ const u16 gCubicBSplineBasis[2] = { Q_4_12(2.0 / 3.0), Q_4_12(1.0 / 6.0) };
 u32 gRngPrevValue = 0;
 u32 gRngValue = 0;
 
+inline bool8 TransformNode_RemoveChild(TransformNode *parent, TransformNode *child);
+inline Transform3D *TransformNode_GetWorld3D(TransformNode *node);
+
 inline u16 Random(void)
 {
     u32 *pPrev = &gRngPrevValue;

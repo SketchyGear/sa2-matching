@@ -37,7 +37,7 @@ inline void SeedRng(u32 prev, u32 cur)
     gRngValue = cur;
 }
 
-UNUSED inline u32 MaxAbs(s32 a, s32 b)
+inline u32 MaxAbs(s32 a, s32 b)
 {
     a = ABS(a);
     b = ABS(b);
@@ -65,7 +65,7 @@ inline s16 AngleDiff(u16 angleA, u16 angleB, u8 n)
 
 inline u32 Lerp(s32 start, s32 end, s32 t, u8 n) { return start - ((s64)t * (end - start) >> n); }
 
-UNUSED inline u16 LerpAngle(u16 angleStart, u16 angleEnd, u8 n1, s16 t, u8 n2)
+inline u16 LerpAngle(u16 angleStart, u16 angleEnd, u8 n1, s16 t, u8 n2)
 {
     s16 diff = -(t * -AngleDiff(angleStart, angleEnd, n1) >> n2);
 
@@ -90,13 +90,13 @@ inline s32 LerpToStart(s32 start, s32 end, s32 t, u8 n, u8 cnt)
     return end;
 }
 
-UNUSED inline s32 WeightedLeft(s32 prev, s32 cur, s32 next) { return (prev * 7 + cur * 6 - next) / 12; }
+inline s32 WeightedLeft(s32 prev, s32 cur, s32 next) { return (prev * 7 + cur * 6 - next) / 12; }
 
-UNUSED inline s32 WeightedRight(s32 prev, s32 cur, s32 next) { return (-prev + cur * 6 + next * 7) / 12; }
+inline s32 WeightedRight(s32 prev, s32 cur, s32 next) { return (-prev + cur * 6 + next * 7) / 12; }
 
-UNUSED inline s32 WeightedLeft2(s32 prev, s32 cur, s32 next) { return (prev + cur * 8 - next) >> 3; }
+inline s32 WeightedLeft2(s32 prev, s32 cur, s32 next) { return (prev + cur * 8 - next) >> 3; }
 
-UNUSED inline s32 WeightedRight2(s32 prev, s32 cur, s32 next) { return (-prev + cur * 8 + next) >> 3; }
+inline s32 WeightedRight2(s32 prev, s32 cur, s32 next) { return (-prev + cur * 8 + next) >> 3; }
 
 inline s32 DeltaScaled(s32 start, s32 end, s32 t, UNUSED s32 adjust, UNUSED s32 offset, u8 n)
 {
@@ -121,14 +121,14 @@ inline s32 CurveOffset(s32 prev, s32 cur, s32 next)
     return delta + (delta >> 1) - (cur >> 1);
 }
 
-UNUSED inline s32 CurveOffsetScaled2(s32 prev, s32 cur, s32 next, s32 t, s32 adjust, s32 offset, u8 n)
+inline s32 CurveOffsetScaled2(s32 prev, s32 cur, s32 next, s32 t, s32 adjust, s32 offset, u8 n)
 {
     return CurveOffsetScaled(prev, cur, next, t, adjust, offset, n);
 }
 
-UNUSED inline s32 CurveOffset2(s32 prev, s32 cur, s32 next) { return CurveOffset(prev, cur, next); }
+inline s32 CurveOffset2(s32 prev, s32 cur, s32 next) { return CurveOffset(prev, cur, next); }
 
-UNUSED inline s32 DeltaCurveOffsetScaled(s32 prev, s32 cur, s32 next, s32 t, s32 adjust, s32 offset, u8 n)
+inline s32 DeltaCurveOffsetScaled(s32 prev, s32 cur, s32 next, s32 t, s32 adjust, s32 offset, u8 n)
 {
     s32 prevDelta = DeltaScaled(prev, cur, -offset, adjust, offset, n);
     s32 nextDelta = DeltaScaled(cur, next, offset, adjust, offset, n);
@@ -140,7 +140,7 @@ UNUSED inline s32 DeltaCurveOffsetScaled(s32 prev, s32 cur, s32 next, s32 t, s32
     return ((s64)(interpolatedDelta + prevDelta) * (BitValue(n) - t)) >> n;
 }
 
-UNUSED inline s32 DeltaCurveOffsetScaledInverse(s32 prev, s32 cur, s32 next, s32 t, s32 adjust, s32 offset, u8 n)
+inline s32 DeltaCurveOffsetScaledInverse(s32 prev, s32 cur, s32 next, s32 t, s32 adjust, s32 offset, u8 n)
 {
     s32 prevDelta = DeltaScaled(prev, cur, -offset, adjust, offset, n);
     s32 nextDelta = DeltaScaled(cur, next, offset, adjust, offset, n);
@@ -152,7 +152,7 @@ UNUSED inline s32 DeltaCurveOffsetScaledInverse(s32 prev, s32 cur, s32 next, s32
     return ((s64)(interpolatedDelta + prevDelta) * (BitValue(n) - t)) >> n;
 }
 
-UNUSED inline s32 DeltaCentral(s32 prev, s32 cur, s32 next)
+inline s32 DeltaCentral(s32 prev, s32 cur, s32 next)
 {
     s32 delta = Delta(prev, cur);
 
@@ -247,7 +247,7 @@ UNUSED s32 HermiteCubicInterpolate(s32 p0, s32 m0, s32 m1, s32 p1, s32 t, u8 n)
         >> n;
 }
 
-UNUSED inline void Transform2D_Init(Transform2D *transform)
+inline void Transform2D_Init(Transform2D *transform)
 {
     transform->rotation = 0;
     transform->scaleX = Q_6_10(1.0);
@@ -382,7 +382,7 @@ inline void Vec3_Normalize(Vec3_16 *v, u8 n)
     v->z = scale * v->z >> n;
 }
 
-UNUSED inline s32 Vec3_Dot(Vec3_16 *u, Vec3_16 *v, u8 n) { return (u->x * v->x + u->y * v->y + u->z * v->z) >> n; }
+inline s32 Vec3_Dot(Vec3_16 *u, Vec3_16 *v, u8 n) { return (u->x * v->x + u->y * v->y + u->z * v->z) >> n; }
 
 inline void Vec3_Cross(Vec3_16 *u, Vec3_16 *v, Vec3_16 *out, u8 n)
 {
@@ -391,7 +391,7 @@ inline void Vec3_Cross(Vec3_16 *u, Vec3_16 *v, Vec3_16 *out, u8 n)
     out->z = (u->x * v->y - u->y * v->x) >> n;
 }
 
-UNUSED inline void Quaternion_Init(Quaternion *quat)
+inline void Quaternion_Init(Quaternion *quat)
 {
     quat->x = quat->y = quat->z = 0;
     quat->w = Q_6_10(1.0);
@@ -439,7 +439,7 @@ UNUSED void Quaternion_ApplyToParent(Quaternion *local, Quaternion *parent)
     parent->w = Q_6_10_TO_INT(local->w * parent->w - local->x * x - local->y * y - local->z * z);
 }
 
-UNUSED inline void Quaternion_Conjugate(Quaternion *quat)
+inline void Quaternion_Conjugate(Quaternion *quat)
 {
     quat->x = -quat->x;
     quat->y = -quat->y;
@@ -456,7 +456,7 @@ UNUSED void Quaternion_Invert(Quaternion *quat)
     quat->w = Q_6_10_MUL(quat->w, scale);
 }
 
-UNUSED inline void Quaternion_RotateX(Quaternion *quat, u16 angle)
+inline void Quaternion_RotateX(Quaternion *quat, u16 angle)
 {
     s16 angleSin;
 
@@ -469,7 +469,7 @@ UNUSED inline void Quaternion_RotateX(Quaternion *quat, u16 angle)
     quat->w = Q_2_14_TO_Q_6_10(COS(angle));
 }
 
-UNUSED inline void Quaternion_RotateY(Quaternion *quat, u16 angle)
+inline void Quaternion_RotateY(Quaternion *quat, u16 angle)
 {
     s16 angleSin;
 
@@ -482,7 +482,7 @@ UNUSED inline void Quaternion_RotateY(Quaternion *quat, u16 angle)
     quat->w = Q_2_14_TO_Q_6_10(COS(angle));
 }
 
-UNUSED inline void Quaternion_RotateZ(Quaternion *quat, u16 angle)
+inline void Quaternion_RotateZ(Quaternion *quat, u16 angle)
 {
     s16 angleSin;
 
@@ -495,7 +495,7 @@ UNUSED inline void Quaternion_RotateZ(Quaternion *quat, u16 angle)
     quat->w = Q_2_14_TO_Q_6_10(COS(angle));
 }
 
-UNUSED inline void Quaternion_RotateAxis(Quaternion *quat, u16 angle, Vec3_16 *axis)
+inline void Quaternion_RotateAxis(Quaternion *quat, u16 angle, Vec3_16 *axis)
 {
     s16 angleSin;
 
@@ -530,7 +530,7 @@ inline void Transform3D_Init(Transform3D *transform)
     transform->linear[0][0] = transform->linear[1][1] = transform->linear[2][2] = Q_6_10(1.0);
 }
 
-UNUSED inline void Transform3D_InitTranslation(Transform3D *transform, s32 x, s32 y, s32 z)
+inline void Transform3D_InitTranslation(Transform3D *transform, s32 x, s32 y, s32 z)
 {
     Transform3D_Init(transform);
 
@@ -539,7 +539,7 @@ UNUSED inline void Transform3D_InitTranslation(Transform3D *transform, s32 x, s3
     transform->translation.v32.z = z;
 }
 
-UNUSED inline void Transform3D_InitIdentity(Transform3D *transform, s32 m00, s32 m11, s32 m22)
+inline void Transform3D_InitIdentity(Transform3D *transform, s32 m00, s32 m11, s32 m22)
 {
     Transform3D_Init(transform);
 
@@ -995,7 +995,7 @@ UNUSED void Transform3D_FromQuaternion(Transform3D *transform, Quaternion *quat)
     transform->translation.v32.x = transform->translation.v32.y = transform->translation.v32.z = 0;
 }
 
-UNUSED inline void TransformNode_Init(TransformNode *node)
+inline void TransformNode_Init(TransformNode *node)
 {
     node->parent = NULL;
     node->child = NULL;
@@ -1003,7 +1003,7 @@ UNUSED inline void TransformNode_Init(TransformNode *node)
     node->flags = TRANSFORM_NONE;
 }
 
-UNUSED inline TransformNode *TransformNode_GetRoot(TransformNode *node)
+inline TransformNode *TransformNode_GetRoot(TransformNode *node)
 {
     for (; node->parent != NULL; node = node->parent)
         ;
@@ -1021,7 +1021,7 @@ inline void TransformNode_DetachFromParent(TransformNode *node)
     }
 }
 
-UNUSED inline void TransformNode_AddChild(TransformNode *parent, TransformNode *child)
+inline void TransformNode_AddChild(TransformNode *parent, TransformNode *child)
 {
     TransformNode_DetachFromParent(child);
 
@@ -1052,7 +1052,7 @@ inline bool8 TransformNode_RemoveChild(TransformNode *parent, TransformNode *chi
     return FALSE;
 }
 
-UNUSED inline u16 TransformNode_GetChildCount(TransformNode *node)
+inline u16 TransformNode_GetChildCount(TransformNode *node)
 {
     u16 cnt;
     for (cnt = 0, node = node->child; node != NULL; cnt++, node = node->next)
@@ -1061,7 +1061,7 @@ UNUSED inline u16 TransformNode_GetChildCount(TransformNode *node)
     return cnt;
 }
 
-UNUSED inline TransformNode *TransformNode_GetChildByIdx(TransformNode *node, u16 idx)
+inline TransformNode *TransformNode_GetChildByIdx(TransformNode *node, u16 idx)
 {
     for (node = node->child; node != NULL && idx != 0; idx--, node = node->next)
         ;
@@ -1074,12 +1074,12 @@ inline void TransformNode_GetLocal2D(TransformNode *node, Transform2D *transform
     memcpy(transform, &node->transform.transform2D, sizeof(Transform2D));
 }
 
-UNUSED inline void TransformNode_SetLocal2D(TransformNode *node, Transform2D *transform)
+inline void TransformNode_SetLocal2D(TransformNode *node, Transform2D *transform)
 {
     memcpy(&node->transform.transform2D, transform, sizeof(Transform2D));
 }
 
-UNUSED inline void TransformNode_GetWorld2D(TransformNode *node, Transform2D *transform)
+inline void TransformNode_GetWorld2D(TransformNode *node, Transform2D *transform)
 {
     TransformNode_GetLocal2D(node, transform);
 
@@ -1088,7 +1088,7 @@ UNUSED inline void TransformNode_GetWorld2D(TransformNode *node, Transform2D *tr
     }
 }
 
-UNUSED inline void TransformNode_InitLocal3D(TransformNode *node)
+inline void TransformNode_InitLocal3D(TransformNode *node)
 {
     node->transform.state3D.useTRS = FALSE;
 
@@ -1096,7 +1096,7 @@ UNUSED inline void TransformNode_InitLocal3D(TransformNode *node)
     node->flags |= TRANSFORM_LOCAL_VALID;
 }
 
-UNUSED inline void TransformNode_InitTRS(TransformNode *node)
+inline void TransformNode_InitTRS(TransformNode *node)
 {
     node->transform.state3D.useTRS = TRUE;
 
@@ -1140,7 +1140,7 @@ Transform3D *TransformNode_GetLocal3D(TransformNode *node)
     return &node->transform.state3D.local;
 }
 
-UNUSED inline Transform3D *TransformNode_UpdateWorld3D(TransformNode *node)
+inline Transform3D *TransformNode_UpdateWorld3D(TransformNode *node)
 {
     Transform3D *parent = NULL;
 
@@ -1201,4 +1201,4 @@ inline Transform3D *TransformNode_GetWorld3D(TransformNode *node)
     return &node->transform.state3D.world;
 }
 
-UNUSED inline void Math_DummyFunc(void) { }
+inline void Math_DummyFunc(void) { }

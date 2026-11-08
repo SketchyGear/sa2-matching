@@ -55,13 +55,6 @@ void Transform2D_ApplyToLocal(Transform2D *local, Transform2D *parent);
 UNUSED void Transform2D_ApplyToParent(Transform2D *local, Transform2D *parent);
 UNUSED void Transform2D_Invert(Transform2D *transform);
 
-static inline void Vec3_Sub(Vec3_32 *u, Vec3_32 *v, Vec3_16 *out)
-{
-    out->x = u->x - v->x;
-    out->y = u->y - v->y;
-    out->z = u->z - v->z;
-}
-
 inline void Vec3_Normalize(Vec3_16 *v, u8 n);
 inline s32 Vec3_Dot(Vec3_16 *u, Vec3_16 *v, u8 n);
 inline void Vec3_Cross(Vec3_16 *u, Vec3_16 *v, Vec3_16 *out, u8 n);
